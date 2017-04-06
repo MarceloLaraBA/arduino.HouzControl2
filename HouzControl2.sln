@@ -5,6 +5,10 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bedroom", "bedroom\bedroom.vcxproj", "{C5F80730-F44F-4478-BDAE-6634EFC2CA88}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "master_logger", "master_logger\master_logger.vcxproj", "{CC2E0C7E-D778-4922-BD44-95211CA714FE}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "external_sensors", "external_sensors\external_sensors.vcxproj", "{56FA8476-44F9-41F2-BABA-20EE5E4DDD8E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -15,6 +19,14 @@ Global
 		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Debug|x86.Build.0 = Debug|Win32
 		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|x86.ActiveCfg = Release|Win32
 		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|x86.Build.0 = Release|Win32
+		{CC2E0C7E-D778-4922-BD44-95211CA714FE}.Debug|x86.ActiveCfg = Debug|Win32
+		{CC2E0C7E-D778-4922-BD44-95211CA714FE}.Debug|x86.Build.0 = Debug|Win32
+		{CC2E0C7E-D778-4922-BD44-95211CA714FE}.Release|x86.ActiveCfg = Release|Win32
+		{CC2E0C7E-D778-4922-BD44-95211CA714FE}.Release|x86.Build.0 = Release|Win32
+		{56FA8476-44F9-41F2-BABA-20EE5E4DDD8E}.Debug|x86.ActiveCfg = Debug|Win32
+		{56FA8476-44F9-41F2-BABA-20EE5E4DDD8E}.Debug|x86.Build.0 = Debug|Win32
+		{56FA8476-44F9-41F2-BABA-20EE5E4DDD8E}.Release|x86.ActiveCfg = Release|Win32
+		{56FA8476-44F9-41F2-BABA-20EE5E4DDD8E}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
