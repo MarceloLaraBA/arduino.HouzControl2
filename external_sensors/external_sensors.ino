@@ -17,8 +17,9 @@
 #define rfCE 7      //RF pin 3 (CE)
 #define rfCS 8      //RF pin 4 (CS)
 #define rfChannel 0x5D   
-#define rfPipeMain 0xF0F0F0F0AA
-#define rfPipeBedr 0xF0F0F0F066
+#define rfPipeMain		0xF0F0F0F0AA
+#define rfPipeBedr		0xF0F0F0F066
+#define rfPipeSensors	0xF0F0F0F011
 bool radioReady = false;
 RF24 radio(rfCE, rfCS);
 RFencoder rfEncoder;
@@ -46,7 +47,7 @@ void setup() {
 	radio.setPALevel(RF24_PA_HIGH);
 	radio.setChannel(rfChannel);
 	radio.openWritingPipe(rfPipeMain);
-	radio.openReadingPipe(1, rfPipeBedr);
+	radio.openReadingPipe(1, rfPipeSensors);
 	radioReady = (rfChannel == radio.getChannel());
 	if(radioReady){
 		radio.printDetails();
@@ -71,13 +72,25 @@ void loop() {
 
 	Serial.print("light: ");
 	u32 txLight = rfEncoder.encode(lightSensorDeviceId, lightLevel());
-	Serial.println(txLight, HEX);
+	Serial.print(txLight, HEX);
 
 	//temp
-	Serial.print("temp: ");
-	u32 temp = rfEncoder.encode(tempSensorDeviceId, (temperature() * 100));
-	Serial.println(temp, HEX);
+	Serial.print(" | temp: ");
+	u32 txTemp = rfEncoder.encode(tempSensorDeviceId, (temperature() * 100));
+	Serial.println(txTemp, HEX);
 
+
+	radioWrite(txLight);
+	radioWrite(txTemp);
+
+	////decode test
+	//decode_result devTemp;
+	//rfEncoder.decode(txTemp, &devTemp);
+	//printDecodedValues(devTemp);
+
+	//decode_result devLight;
+	//rfEncoder.decode(txLight, &devLight);
+	//printDecodedValues(devLight);
 
 	delay(1000);
 }
@@ -103,6 +116,19 @@ void radioRead() {
 }
 
 
+void radioWrite(u32 rfMessage) {
+	radio.stopListening();
+	if (!radio.write(&rfMessage, sizeof(unsigned long))) {
+		Serial.println(F("failed"));
+	}
+	else {
+		Serial.print("sent> 0x");
+		Serial.println(rfMessage, HEX);
+	}
+	radio.startListening();
+}
+
+
 // Sensor values
 u32 lightLevel() {
 	return analogRead(lightSensorPin);
@@ -111,4 +137,18 @@ u32 lightLevel() {
 float temperature() {
 	dallasTemp.requestTemperatures();
 	return dallasTemp.getTempCByIndex(0);// Why "byIndex"? You can have more than one IC on the same bus. 0 refers to the first IC on the wire
+}
+
+// debug
+void printDecodedValues(decode_result dec) {
+	if (dec.hasData) {
+		Serial.print("[dev:");
+		Serial.print(dec.deviceId);
+		Serial.print("|val:");
+		Serial.print(dec.devicePayload);
+		Serial.println("]");
+	}
+	else {
+		Serial.println("[unknown data]");
+	}
 }
