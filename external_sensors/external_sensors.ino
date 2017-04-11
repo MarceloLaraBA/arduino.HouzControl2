@@ -69,21 +69,13 @@ void setup() {
 void loop() {
 	radioRead();
 
-
-	Serial.print("light: ");
 	u32 txLight = rfEncoder.encode(lightSensorDeviceId, lightLevel());
-	Serial.print(txLight, HEX);
-
-	//temp
-	Serial.print(" | temp: ");
-	u32 txTemp = rfEncoder.encode(tempSensorDeviceId, (temperature() * 100));
-	Serial.println(txTemp, HEX);
-
-
 	radioWrite(txLight);
+
+	u32 txTemp = rfEncoder.encode(tempSensorDeviceId, (temperature() * 100));
 	radioWrite(txTemp);
 
-	////decode test
+	//decode test
 	//decode_result devTemp;
 	//rfEncoder.decode(txTemp, &devTemp);
 	//printDecodedValues(devTemp);
@@ -140,15 +132,15 @@ float temperature() {
 }
 
 // debug
-void printDecodedValues(decode_result dec) {
-	if (dec.hasData) {
-		Serial.print("[dev:");
-		Serial.print(dec.deviceId);
-		Serial.print("|val:");
-		Serial.print(dec.devicePayload);
-		Serial.println("]");
-	}
-	else {
-		Serial.println("[unknown data]");
-	}
-}
+//void printDecodedValues(decode_result dec) {
+//	if (dec.hasData) {
+//		Serial.print("[dev:");
+//		Serial.print(dec.deviceId);
+//		Serial.print("|val:");
+//		Serial.print(dec.devicePayload);
+//		Serial.println("]");
+//	}
+//	else {
+//		Serial.println("[unknown data]");
+//	}
+//}
