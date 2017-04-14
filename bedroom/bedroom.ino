@@ -9,25 +9,16 @@ IRM-8601S
 
 */
 
-#include <RF24_config.h>
-#include <nRF24L01.h>
-#include <IRremoteInt.h>
+#include <HouzDevices.h>
 #include <IRremote.h>
-#include <RF24.h>
-#include <printf.h>
-#include <SPI.h>
-
-#define acPowerOn 0x880074B
-#define acPowerOff 0x88C0051
-
-#define tvPower 0x20DF10EF
 
 //hardware setup
-#define irRecvPin 6   //IRM-8601S
-#define irSndPin  3   //IR Led (can't be changed)
-#define inSwitch A0   //wall switch
-#define swLight  5    //wall led indicator
-#define lightOut 2    //relay
+#define irRecvPin	6	//IRM-8601S
+#define irSndPin	3	//IR Led (can't be changed)
+#define inSwitch	A0	//wall switch
+#define swLight		5	//wall led indicator
+#define swLightLvl	200	//wall led indicator level
+#define lightOut	2	//relay
 
 
 //functional
@@ -45,10 +36,9 @@ IRsend irsend;
 #define rfReceiveLed 9  //
 #define rfCE 8      //RF pin 3 (CE)
 #define rfCS 7      //RF pin 4 (CS)
-#define rfChannel 0x5D   
-#define rfPipeMain 0xF0F0F0F0AA
-#define rfPipeBedr 0xF0F0F0F066
 RF24 radio(rfCE, rfCS);
+HouzDevices devices(bedroom_node, radio, rfReceiveLed, Serial);
+
 
 void setup() {
 	//serial debug
@@ -56,15 +46,15 @@ void setup() {
 	Serial.println("-- setup --");
 
 	//radio setup
-	Serial.println("::RF setup");
-	printf_begin();
-	radio.begin();
-	radio.setPALevel(RF24_PA_HIGH);
-	radio.setChannel(rfChannel);
-	radio.openWritingPipe(rfPipeMain);
-	radio.openReadingPipe(1, rfPipeBedr);
-	radio.printDetails();
-	radio.startListening();
+	//Serial.println("::RF setup");
+	//printf_begin();
+	//radio.begin();
+	//radio.setPALevel(RF24_PA_HIGH);
+	//radio.setChannel(rfChannel);
+	//radio.openWritingPipe(rfPipeMain);
+	//radio.openReadingPipe(1, rfPipeBedr);
+	//radio.printDetails();
+	//radio.startListening();
 
 	//ir setup
 	Serial.println("\n\r::IR setup");
@@ -94,51 +84,32 @@ void loop()
 // RF communication
 
 void radioRead() {
-	unsigned long rfMessage;
-	if (radio.available()) {
-		while (radio.available()) {             // While there is data ready
-			radio.read(&rfMessage, sizeof(unsigned long));  // Get the payload
-			digitalWrite(rfReceiveLed, HIGH);       // Notify receive
-		}
-		Serial.print("RF recv> ");
-		handleIrCode(rfMessage);
-		delay(500);
-		radio.startListening();
-		digitalWrite(rfReceiveLed, LOW);
-	}
+	//unsigned long rfMessage;
+	//if (radio.available()) {
+	//	while (radio.available()) {             // While there is data ready
+	//		radio.read(&rfMessage, sizeof(unsigned long));  // Get the payload
+	//		digitalWrite(rfReceiveLed, HIGH);       // Notify receive
+	//	}
+	//	Serial.print("RF recv> ");
+	//	handleIrCode(rfMessage);
+	//	delay(500);
+	//	radio.startListening();
+	//	digitalWrite(rfReceiveLed, LOW);
+	//}
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // IR Remote Control
-#define irDvr1 0xB59    //dvr: keypad 1
-#define irDvr2 0x80B59    //dvr: keypad 2
-#define irDvr3 0x40B59    //dvr: keypad 3
-#define irDvr4 0xC0B59    //dvr: keypad 4
-#define irDvr5 0x20B59    //dvr: keypad 5
-#define irDvr6 0xA0B59    //dvr: keypad 6
-#define irDvr7 0x60B59    //dvr: keypad 7
-#define irDvr8 0xE0B59    //dvr: keypad 8
-#define irDvr9 0x10B59    //dvr: keypad 9
-#define irDvr0 0xD0B59    //dvr: keypad 0
-#define irDvrEnter 0x90B59  //dvr: keypad Enter
-#define irDvrA 0xDAB59    //dvr: key A
-#define irDvrB 0x4EB59    //dvr: key B
 
-#define irDvrUp 0xFAB59   //dvr: joystick up
-#define irDvrRight 0x86B59  //dvr: joystick right
-#define irDvrLeft 0x46B59 //dvr: joystick left
-#define irDvrDown 0x6B59  //dvr: joystick down
-#define irDvrCenter 0x7AB59 //dvr: joystick enter
 
 void infraredRead() {
 	decode_results results;
 	if (irrecv.decode(&results)) {  // Grab an IR code
 		if (results.value != 0xFFFFFFFF) {
 			Serial.print("\n\rIR recv> ");
+			handleIrCode(results.value);
 		}
-
-		handleIrCode(results.value);
 		irrecv.resume();              // Prepare for the next value
 	}
 
@@ -167,8 +138,6 @@ void handleIrCode(unsigned long irCode) {
 		Serial.println("IR snd> tvPower");
 		irsend.sendLG(tvPower, 28);
 		irrecv.enableIRIn();
-
-
 		break;
 
 	case 0x6B59: //down
