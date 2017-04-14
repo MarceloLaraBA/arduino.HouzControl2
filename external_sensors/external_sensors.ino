@@ -9,11 +9,12 @@
 #include <DallasTemperature.h>
 
 
-//Radio Setup
+//Houz/Radio Setup
 #define rfRecvLed 9 //Led
-#define rfCE 7      //RF pin 3 (CE)
-#define rfCS 8      //RF pin 4 (CS)
+#define rfCE 9      //RF pin 3 (CE)
+#define rfCS 10      //RF pin 4 (CS)
 RF24 radio(rfCE, rfCS);
+HouzDevices houz(external_node, radio, rfRecvLed, Serial);
 
 
 //light sensor
@@ -24,12 +25,9 @@ RF24 radio(rfCE, rfCS);
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature dallasTemp(&oneWire);
 
-//Houz Setup
-HouzDevices houz(external_node, radio, rfRecvLed, Serial);
-
 void setup() {
 	Serial.begin(115200);
-	houz.radioSetup(rfRecvLed);
+	houz.radioSetup();
 
 	//light sensor setup
 	pinMode(lightSensorPin, INPUT);
@@ -41,49 +39,27 @@ void setup() {
 }
 
 void loop() {
-
 	if (houz.radioRead()) {
 		handleCommand(houz.receivedData());
 	};
-
-
-
-	float temp = temperature();
-
-	u32 txTemp = houz.encode(CMD_QUERY, external_tempSensor, 0xAAAA);
-	Serial.print("encoded: 0x");
-	Serial.print(txTemp, HEX);
-
-	deviceData device;
-	device = houz.decode(txTemp);
-
-	Serial.print(" | decoded: [id:");
-	Serial.print(device.id, HEX);
-	Serial.print("|cmd:");
-	Serial.print(device.cmd, HEX);
-	Serial.print("|payload:");
-	Serial.print(device.payload, HEX);
-	Serial.print("]");
-
-	Serial.println();
-	delay(1000);
 }
 
 void handleCommand(deviceData device) {
 	Serial.println("handleCommand");
-	switch (device.id)
-	{
+	switch (device.id){
+	
 	case external_lightSensor:
-		switch (device.cmd)
-		{
-		case CMD_QUERY:
-			houz.radioSend(CMD_VALUE, external_lightSensor, lightLevel());
-			break;
-		default:
-			break;
-		}
+		delay(100);
+		houz.radioSend(CMD_VALUE, external_lightSensor, lightLevel());
 		break;
+
+	case external_tempSensor:
+		delay(100);
+		houz.radioSend(CMD_VALUE, external_tempSensor, temperature()*100);
+		break;
+
 	default:
+		Serial.println("unhandled: " + houz.deviceToString(device));
 		break;
 	}
 
@@ -91,6 +67,7 @@ void handleCommand(deviceData device) {
 
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Sensor values
 u32 lightLevel() {

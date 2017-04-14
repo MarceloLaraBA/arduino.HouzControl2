@@ -19,7 +19,7 @@ void setup() {
 	//serial debug
 	Serial.begin(115200);
 	Serial.println("-- setup --");
-	houz.radioSetup(rfRecvLed);
+	houz.radioSetup();
 
 	Serial.println("");
 	Serial.println("\r\n-- runtime --");

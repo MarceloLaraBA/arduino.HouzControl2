@@ -45,17 +45,6 @@ void setup() {
 	Serial.begin(115200);
 	Serial.println("-- setup --");
 
-	//radio setup
-	//Serial.println("::RF setup");
-	//printf_begin();
-	//radio.begin();
-	//radio.setPALevel(RF24_PA_HIGH);
-	//radio.setChannel(rfChannel);
-	//radio.openWritingPipe(rfPipeMain);
-	//radio.openReadingPipe(1, rfPipeBedr);
-	//radio.printDetails();
-	//radio.startListening();
-
 	//ir setup
 	Serial.println("\n\r::IR setup");
 	irrecv.enableIRIn();
