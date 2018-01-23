@@ -1,0 +1,2 @@
+# LightTemp_test build property overrides
+#
