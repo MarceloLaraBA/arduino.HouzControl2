@@ -36,6 +36,7 @@ void loop() {
 		handlePacket(action_rfReceived, houz.receivedData());
 	};
 
+  // Serial commands
   houz.serialRead();
 }
 

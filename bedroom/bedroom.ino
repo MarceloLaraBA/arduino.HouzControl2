@@ -152,7 +152,6 @@ void switchRead() {
 		toggleLightRelay();
 		delay(500); //debounce
 	}
-
 }
 void toggleLightRelay() {
 	lightOn = !lightOn;
