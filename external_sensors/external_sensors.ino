@@ -10,14 +10,6 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-
-//Houz/Radio Setup
-#define rfRecvLed 4 //Led
-#define rfCE 9      //RF pin 3 (CE)
-#define rfCS 10      //RF pin 4 (CS)
-RF24 radio(rfCE, rfCS);
-HouzDevices houz(external_node, radio, rfRecvLed, Serial);
-
 //light sensor
 #define lightSensorPin A0
 
@@ -40,6 +32,14 @@ DallasTemperature dallasTemp(&oneWire);
 //IRrecv irrecv(irRecvPin);
 #define irSndPin  3 //IR Led (can't be changed)
 IRsend irsend;
+
+//Houz/Radio Setup
+#define rfRecvLed 4 //Led
+#define rfCE 9      //RF pin 3 (CE)
+#define rfCS 10      //RF pin 4 (CS)
+RF24 radio(rfCE, rfCS);
+HouzDevices houz(external_node, radio, ceilingLightSwitch, Serial);
+
 
 ///////////////////////////
 //functional
@@ -65,7 +65,6 @@ void setup() {
 	pinMode(ceilingLightPin, OUTPUT);
 	pinMode(ceilingLightLed, OUTPUT);
 	pinMode(ceilingLightSwitch, INPUT_PULLUP);
-	analogWrite(ceilingLightLed, 128);
 	digitalWrite(ceilingLightPin, HIGH);
 
 	Serial.println("\r\n-- external_node --");
@@ -75,6 +74,9 @@ void setup() {
 	Serial.println("l\t send light level");
 	Serial.println("t\t send temp level");
 	Serial.print(">");
+
+  houz.radioSend(CMD_STATUS, office_node, 1);
+
 
 }
 
@@ -86,24 +88,52 @@ void loop() {
 }
 
 void handleCommand(deviceData device) {
-	Serial.println("handleCommand: " + houz.deviceToString(device));
+	Serial.println("\r" + houz.deviceToString(device));
 	
 	switch (device.id){
 		case external_lightSensor:
+			Serial.println("external_lightSensor");
 			delay(200);
 			houz.radioSend(CMD_VALUE, external_lightSensor, lightLevel());
 			break;
 
 		case external_tempSensor:
+			Serial.println("external_tempSensor");
 			delay(200);
 			houz.radioSend(CMD_VALUE, external_tempSensor, temperature()*100);
 			break;
 
 		case office_light:
-			if(device.cmd==CMD_SET){
-				setLight(ceilingLightPin, (device.payload==1));
-			};
+			Serial.println("office_light");
+			if(device.cmd==CMD_SET) setLight(ceilingLightPin, (device.payload!=1));
+			delay(200);
 			houz.radioSend(CMD_VALUE, office_light, getLight(ceilingLightPin)?1:0);
+			break;
+
+		case office_switchLed:
+			Serial.println("office_switchLed");
+			if (device.cmd == CMD_SET) analogWrite(ceilingLightLed, (int)device.payload);
+			delay(200);
+			houz.radioSend(CMD_VALUE, office_switchLed, analogRead(ceilingLightLed));
+			break;
+
+		case office_AC:
+			Serial.println("office_AC");
+			if (device.cmd == CMD_SET) {
+				airConditionerOn = (device.payload == 1);
+				ACsendCommand(airConditionerOn ? acBghPowerOn : acBghPowerOff);
+			}
+			delay(200);
+			houz.radioSend(CMD_VALUE, office_AC, airConditionerOn ? 1 : 0);
+			break;
+
+		case office_AC_temp:
+			if (device.cmd == CMD_SET) {
+				airConditionerTemp = (device.payload);
+				ACsendCommand(ACtempCode(airConditionerTemp));
+			}
+			delay(200);
+			houz.radioSend(CMD_VALUE, office_AC_temp, airConditionerTemp);
 			break;
 
 		default:
@@ -134,7 +164,7 @@ void handleSerial() {
 
 	case 'a':case 'A':
 		airConditionerOn = !airConditionerOn;
-		ACsendCommand(airConditionerOn ? acPowerOn : acPowerOff);
+		ACsendCommand(airConditionerOn ? acBghPowerOn : acBghPowerOff);
 		houz.radioWrite(houz.encode(CMD_VALUE, office_AC, airConditionerOn ? 1 : 0), server_node);
 		break;
 
@@ -169,19 +199,23 @@ void switchRead() {
 	int buttonState;
 	buttonState = digitalRead(ceilingLightSwitch);
 	if (buttonState == HIGH) return;
-	Serial.println("switch> pressed..");
 	setLight(ceilingLightPin, !getLight(ceilingLightPin));
+  houz.statusLedBlink();
+	houz.radioSend(CMD_EVENT, office_switch, 1);
 	houz.radioSend(CMD_VALUE, office_light, getLight(ceilingLightPin) ? 1 : 0);
 	delay(500); //debounce
-	
 }
 bool setLight(u8 pin, bool status) {
 	digitalWrite(pin, status ? HIGH : LOW);
 	return true;
 };
 bool getLight(u8 pin) {
-	return digitalRead(pin) == HIGH;
+	return digitalRead(pin) != HIGH;
 };
+
+u8 getValue(u8 pin) {
+	return analogRead(pin);
+}
 
 
 
@@ -189,22 +223,37 @@ bool getLight(u8 pin) {
 // infrared
 void ACsendCommand(unsigned long acCode) {
   //store status
-  if (acCode == acPowerOn) { airConditionerOn = 1; }
-  if (acCode == acPowerOff) { airConditionerOn = 0; }
+	switch (acCode)
+	{
+	case acBghPowerOn:
+		airConditionerOn = 1;
+	case acBghPowerOff:
+		airConditionerOn = 0;
+	default:
+		break;
+	}
 
   //send command
   for (int i = 0; i < 3; i++) {
     irsend.sendLG(acCode, 28);
-    delay(40);
+    delay(100);
   }
+  
   //irrecv.enableIRIn();
-
-  //display status
-  Serial.print("[sent ");
-  Serial.print(acCode, HEX);
-  Serial.print("] AirConditioner ");
-  Serial.print(airConditionerOn == 1 ? "On" : "Off");
-  Serial.print(" | temp: ");
-  Serial.println(airConditionerTemp);
 }
 
+unsigned long ACtempCode(u8 temp) {
+	switch (temp)
+	{
+	case 18: return acBghTemp18;
+	case 19: return acBghTemp19;
+	case 20: return acBghTemp20;
+	case 21: return acBghTemp21;
+	case 22: return acBghTemp22;
+	case 23: return acBghTemp23;
+	case 24: return acBghTemp24;
+	case 25: return acBghTemp25;
+	case 26: return acBghTemp26;
+	default: return acBghTemp24;
+	}
+}

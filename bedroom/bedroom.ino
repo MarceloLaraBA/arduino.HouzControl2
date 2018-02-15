@@ -9,6 +9,7 @@ IRM-8601S
 
 */
 
+#include <HouzInfrared.h>
 #include <HouzDevices.h>
 #include <IRremote.h>
 
@@ -22,7 +23,7 @@ IRM-8601S
 
 
 //functional
-bool lightOn = 0;
+bool lightOn = 1;
 bool airConditionerOn = 0;
 int  airConditionerTemp = 24;
 bool tvOn = 0;
@@ -33,60 +34,75 @@ IRrecv irrecv(irRecvPin);
 IRsend irsend;
 
 //radio setup
-#define rfReceiveLed 9  //
+#define rfRecvLed 9 //RF Led
 #define rfCE 8      //RF pin 3 (CE)
 #define rfCS 7      //RF pin 4 (CS)
 RF24 radio(rfCE, rfCS);
-HouzDevices devices(bedroom_node, radio, rfReceiveLed, Serial);
+HouzDevices houz(bedroom_node, radio, swLight, Serial);
 
 
 void setup() {
 	//serial debug
 	Serial.begin(115200);
-	Serial.println("-- setup --");
 
 	//ir setup
 	Serial.println("\n\r::IR setup");
 	irrecv.enableIRIn();
 
+	//radio
+	houz.radioSetup();
+
 	//switch setup
 	pinMode(inSwitch, INPUT_PULLUP);
 	pinMode(lightOut, OUTPUT);
-	pinMode(swLight, OUTPUT);
-	digitalWrite(swLight, LOW);
-	digitalWrite(lightOut, lightOn);
+	setCeilingLight(1);
 
 	//debug
-	Serial.println("");
-	Serial.println("-- ready --");
-	digitalWrite(swLight, HIGH);
+	Serial.println("\r\n-- bedroom_node --");
 }
 
 void loop()
 {
-	radioRead();  //handle RF
-	infraredRead(); //handle IR
-	switchRead(); //lightSwitch touch
+	if (houz.radioRead()) handleCommand(houz.receivedData()); 
+	infraredRead();  //handle IR
+	switchRead();   //lightSwitch touch
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // RF communication
 
-void radioRead() {
-	//unsigned long rfMessage;
-	//if (radio.available()) {
-	//	while (radio.available()) {             // While there is data ready
-	//		radio.read(&rfMessage, sizeof(unsigned long));  // Get the payload
-	//		digitalWrite(rfReceiveLed, HIGH);       // Notify receive
-	//	}
-	//	Serial.print("RF recv> ");
-	//	handleIrCode(rfMessage);
-	//	delay(500);
-	//	radio.startListening();
-	//	digitalWrite(rfReceiveLed, LOW);
-	//}
+void handleCommand(deviceData device) {
+	Serial.println("\r" + houz.deviceToString(device));
+	switch (device.id) {
+	case bedroom_light:
+    Serial.println("bedroom_light");
+		if (device.cmd == CMD_SET){
+			setCeilingLight(device.payload == 1);
+		}else{
+			delay(200);
+			houz.radioSend(CMD_VALUE, bedroom_light, lightOn ? 1 : 0);
+		};
+		break;
+	case bedroom_AC:
+		Serial.println("bedroom_AC");
+		if (device.cmd == CMD_SET)
+			ACsendCommand(device.payload == 1 ? acBghPowerOn : acBghPowerOff);
+		else
+			delay(200);
+			houz.radioSend(CMD_VALUE, bedroom_AC, airConditionerOn ? 1 : 0);
+		break;
+	case bedroom_AC_temp:
+		Serial.println("bedroom_AC_temp");
+		if (device.cmd == CMD_SET) {
+			airConditionerTemp = (device.payload);
+			ACsendCommand(ACtempCode(airConditionerTemp));
+		}
+		else
+			delay(200);
+			houz.radioSend(CMD_VALUE, bedroom_AC_temp, airConditionerTemp);
+		break;
+	}
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // IR Remote Control
@@ -98,6 +114,7 @@ void infraredRead() {
 		if (results.value != 0xFFFFFFFF) {
 			Serial.print("\n\rIR recv> ");
 			handleIrCode(results.value);
+			houz.statusLedBlink();
 		}
 		irrecv.resume();              // Prepare for the next value
 	}
@@ -108,21 +125,23 @@ void handleIrCode(unsigned long irCode) {
 	if (irCode == 0xFFFFFFFF) { return; }
 	switch (irCode)
 	{
-		//turn light on
+	//turn light on
 	case irDvrCenter:
-		toggleLightRelay();
+		houz.radioSend(CMD_EVENT, bedroom_ir, bedroom_light);
+		setCeilingLight(!lightOn);
 		break;
 
-		//turn on/off AC
+	//turn on/off AC
 	case irDvrA:
+		houz.radioSend(CMD_EVENT, bedroom_switch, bedroom_AC);
 		airConditionerOn = !airConditionerOn;
-		ACsendCommand(airConditionerOn ? acPowerOn : acPowerOff);
+		ACsendCommand(airConditionerOn ? acBghPowerOn : acBghPowerOff);
 		break;
 
 		//TODO: AC temp up
 		//TODO: AC temp down
 
-		//TV Power
+	//TV Power
 	case tvPower:
 		Serial.println("IR snd> tvPower");
 		irsend.sendLG(tvPower, 28);
@@ -136,6 +155,7 @@ void handleIrCode(unsigned long irCode) {
 
 	default:
 		Serial.print("unknown: 0x");
+		houz.radioSend(CMD_EVENT, bedroom_ir, irCode);
 		Serial.println(irCode, HEX);
 		break;
 	}
@@ -147,26 +167,41 @@ void handleIrCode(unsigned long irCode) {
 void switchRead() {
 	int buttonState;
 	buttonState = digitalRead(inSwitch);
-	if (buttonState != HIGH) {
-		Serial.println("switch> pressed..");
-		toggleLightRelay();
-		delay(500); //debounce
-	}
+	if (buttonState == HIGH) return;
+
+	Serial.println("switch> pressed..");
+	setCeilingLight(!lightOn);
+	houz.radioSend(CMD_EVENT, bedroom_switch, bedroom_light);
+	delay(500); //debounce
 }
-void toggleLightRelay() {
-	lightOn = !lightOn;
-	Serial.print("relay>");
-	Serial.println(lightOn);
-	digitalWrite(lightOut, lightOn);
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Ceiling Light
+void setCeilingLight(bool status) {
+	lightOn = status;
+	digitalWrite(lightOut, lightOn? LOW: HIGH);
+	delay(200);
+	houz.radioSend(CMD_VALUE, bedroom_light, status ? 1 : 0);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Air Conditioner
+
 void ACsendCommand(unsigned long acCode) {
 	//store status
-	if (acCode == acPowerOn) { airConditionerOn = 1; }
-	if (acCode == acPowerOff) { airConditionerOn = 0; }
+	if (acCode == acBghPowerOn) { 
+		airConditionerOn = 1; 
+		delay(200);
+		houz.radioSend(CMD_VALUE, bedroom_AC, 1);
+	}
+	if (acCode == acBghPowerOff) { 
+		airConditionerOn = 0; 
+		delay(200);
+		houz.radioSend(CMD_VALUE, bedroom_AC, 0);
+	}
 
 	//send command
 	for (int i = 0; i < 3; i++) {
@@ -175,12 +210,20 @@ void ACsendCommand(unsigned long acCode) {
 	}
 	irrecv.enableIRIn();
 
-	//display status
-	Serial.print("[sent ");
-	Serial.print(acCode, HEX);
-	Serial.print("] AirConditioner ");
-	Serial.print(airConditionerOn == 1 ? "On" : "Off");
-	Serial.print(" | temp: ");
-	Serial.println(airConditionerTemp);
+}
+unsigned long ACtempCode(u8 temp) {
+	switch (temp)
+	{
+	case 18: return acBghTemp18;
+	case 19: return acBghTemp19;
+	case 20: return acBghTemp20;
+	case 21: return acBghTemp21;
+	case 22: return acBghTemp22;
+	case 23: return acBghTemp23;
+	case 24: return acBghTemp24;
+	case 25: return acBghTemp25;
+	case 26: return acBghTemp26;
+	default: return acBghTemp24;
+	}
 }
 
