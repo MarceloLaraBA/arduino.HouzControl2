@@ -19,30 +19,16 @@ deviceData device;
 // #define irRecvPin	6	//IRM-8601S
 // IRrecv irrecv(irRecvPin);
 
-
-
 void setup() {
 	Serial.begin(115200);
+	Serial.println("{act:0, msg:\"");
 	houz.radioSetup();
 //	irrecv.enableIRIn();
-	Serial.println("\r\n-- master_logger --\r\n");
-}
-bool airConditionerOn;
 
-// main loop ////////////////////////////////////////////////////////////////////////////////
+Serial.println("\"}");
+}
+
 void loop() {
-
-	// RF commands
-	if (houz.radioRead()) {
-      Serial.println(houz.packetToString(action_rfReceived, houz.receivedData()));
-	};
-
-  // Serial commands
-  houz.serialRead();
+	houz.radioRead();
+	houz.serialRead();
 }
-
-// packet handling ///////////////////////////////////////////////////////////////////////////
-void handlePacket(u8 action, deviceData device) {
-	Serial.println(houz.packetToString(action, device));
-};
-
