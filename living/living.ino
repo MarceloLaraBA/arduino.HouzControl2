@@ -13,6 +13,8 @@
 	74HC595
 */
 
+#include <HouzSonyRemote.h>
+#include <HouzIrCodes.h>
 #include <IRremote.h>
 #include <HouzInfrared.h>
 #include <HouzDevices.h>
@@ -58,38 +60,39 @@ void loop() {
 	if (houz.radioRead()) handleCommand(houz.receivedData());
 	if (houz.serialRead()) handleCommand(houz.serialData());
 	switchRead(); 
+	houz.taskManager();
 }
 
 void handleCommand(deviceData device) {
 	switch (device.id){
 
 	case living_node		: //ping node
-		Serial.println("living_node> ");
+		Serial.println("[living_node] ping");
 		houz.radioSend(CMD_VALUE, device.id, !device.payload);
 		break;
 
 	case living_switchLed	: // switch led intensity
-		Serial.print("living_switchLed> ");
+		Serial.println("[living_switchLed] ");
 		if (device.cmd == CMD_SET) houz.setIo(device.payload);
 		houz.radioSend(CMD_VALUE, device.id, houz.getIoStatus());
 		break;
 
 	case living_light		: // main lights
-		Serial.println("living_light> ");
+		Serial.println("[living_light] ");
 		if (device.cmd == CMD_SET) houz.setIo(device.payload);
 		houz.radioSend(CMD_VALUE, device.id, houz.getIoStatus());
 		break;
 
 	case living_AC			: 
-		Serial.println("living_AC> ");
+		Serial.println("[living_AC]");
 		break;
 
 	case living_AC_temp		: 
-		Serial.println("living_AC_temp> ");
+		Serial.println("[living_AC_temp]");
 		break;
 
 	default:		  
-		Serial.println("unhandled>" + houz.deviceToString(device));
+		Serial.println("[handleCommand] unknown " + houz.deviceToString(device));
 		break;
 	}				  
 					  
@@ -111,40 +114,41 @@ void testIo(){
 
 };
 
-int actIo;
-char serialIn;
-bool actStatttt;
-void handleSerial() {
-	if (Serial.available() == 0) return;
-	serialIn = Serial.read();
-	Serial.print("serial> ");
-	Serial.println(serialIn);
-
-    switch (serialIn)
-  {
-	case 's':
-		test();
-		break;
-
-  case 'z':
-    testIo();
-    break;
-    
-	case 'x':
-    actIo++;
-    if(actIo>16) actIo=0;
-		actStatttt = houz.getIo(actIo);
-		Serial.print("io> ");
-		Serial.println(actStatttt);
-		houz.setIo(actIo, !actStatttt);
-		break;
-
-	case 'a':
-     word myAnim[] = { 0xF, 0xFF, 0xFFF, 0xFFFF, 0x0};
-     houz.ioAnim(5, myAnim, 2000);
-    break;
-  }
-}
+//int actIo;
+//char serialIn;
+//bool actStatttt;
+//void handleSerial() {
+//	if (Serial.available() == 0) return;
+//	serialIn = Serial.read();
+//	Serial.print("serial> ");
+//	Serial.println(serialIn);
+//
+//    switch (serialIn)
+//  {
+//	case 's':
+//		test();
+//		break;
+//
+//  case 'z':
+//    testIo();
+//    break;
+//    
+//	case 'x':
+//    actIo++;
+//    if(actIo>16) actIo=0;
+//		actStatttt = houz.getIo(actIo);
+//		Serial.print("io> ");
+//		Serial.println(actStatttt);
+//		houz.setIo(actIo, !actStatttt);
+//		break;
+//
+//	case 'a':
+//	 Serial.println('>a');
+//     word myAnim[] = { 0xF, 0xFF, 0xFFF, 0xFFFF, 0x0};
+//     houz.ioAnim(5, myAnim, 2000);
+//    break;
+//  }
+//}
 
 
 void test(){
@@ -164,6 +168,7 @@ void switchRead() {
 	int buttonState;
 	buttonState = digitalRead(inSwitch);
 	if (buttonState == HIGH) return;
+	Serial.println("[switchRead] inSwitch pressed");
 
 	//handle status
 
@@ -173,6 +178,6 @@ void switchRead() {
 	houz.radioSend(CMD_VALUE, living_light, houz.getIoStatus());
 	
 	//debounce
-	delay(500); 
+	//delay(500); 
 }
 
