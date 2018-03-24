@@ -31,4 +31,5 @@ Serial.println("\"}");
 void loop() {
 	houz.radioRead();
 	houz.serialRead();
+  houz.taskManager();
 }
