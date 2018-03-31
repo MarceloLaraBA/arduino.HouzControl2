@@ -9,31 +9,30 @@ Author:	DarkAngel
 #include <DallasTemperature.h>
 
 //light sensor
-#define lightSensorPin A0
+#define lightSensorPin		A0
 
 //temperature
-#define ONE_WIRE_BUS 2
+#define ONE_WIRE_BUS		2
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature dallasTemp(&oneWire);
 
 //lights
-#define ceilingLightPin 8
-#define ceilingLightSwitch 7
-#define ceilingLightLed 6
+#define ceilingLightPin		8
+#define ceilingLightSwitch	7
+#define ceilingLightLed		6
 
 //ir control
 #include <boarddefs.h>
 #include <IRremote.h>
 #include <IRremoteInt.h>
-#include <ir_Lego_PF_BitStreamEncoder.h>
 //#define irRecvPin  6 //IRM-8601S
 //IRrecv irrecv(irRecvPin);
-#define irSndPin  3 //IR Led (can't be changed)
+#define irSndPin			3 //IR Led (can't be changed)
 IRsend irsend;
 
 //Houz/Radio Setup
-#define rfCE 9		//RF pin 3 (CE)
-#define rfCS 10		//RF pin 4 (CS)
+#define rfCE				9 //RF pin 3 (CE)
+#define rfCS				10//RF pin 4 (CS)
 RF24 radio(rfCE, rfCS);
 HouzDevices houz(office_node, radio, ceilingLightLed, Serial);
 
@@ -61,13 +60,11 @@ void setup() {
 	//ceiling light
 	pinMode(ceilingLightPin, OUTPUT);
 	pinMode(ceilingLightSwitch, INPUT_PULLUP);
-	digitalWrite(ceilingLightPin, HIGH);
+
 }
 
-char serialIn;
 void loop() {
-	if (houz.radioRead())	handleCommand(houz.receivedData()); 
-	if (houz.serialRead())	handleCommand(houz.serialData());
+	if (houz.hasData())	handleCommand(houz.getData()); 
 	switchRead(); //lightSwitch touch
 }
 
