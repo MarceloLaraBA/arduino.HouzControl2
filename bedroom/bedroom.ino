@@ -9,6 +9,7 @@ IRM-8601S
 
 */
 
+#include <QueueArray.h>
 #include <HouzInfrared.h>
 #include <HouzDevices.h>
 #include <IRremote.h>
@@ -40,65 +41,49 @@ IRsend irsend;
 RF24 radio(rfCE, rfCS);
 HouzDevices houz(bedroom_node, radio, swLight, Serial);
 
-
 void setup() {
-	//serial debug
 	Serial.begin(115200);
-
-	//ir setup
-	Serial.println("\n\r::IR setup");
-	irrecv.enableIRIn();
-
-	//radio
-	houz.radioSetup();
+	irrecv.enableIRIn();	//ir setup
+	houz.radioSetup();		//houz setup
 
 	//switch setup
 	pinMode(inSwitch, INPUT_PULLUP);
 	pinMode(lightOut, OUTPUT);
-	setCeilingLight(1);
 
-	//debug
-	Serial.println("\r\n-- bedroom_node --");
+	setCeilingLight(1);
 }
 
 void loop()
 {
-	if (houz.radioRead()) handleCommand(houz.receivedData()); 
+	if (houz.hasData()) handleCommand(houz.getData()); 
 	infraredRead();  //handle IR
 	switchRead();   //lightSwitch touch
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// RF communication
+// Handle Commands
 
 void handleCommand(deviceData device) {
-	Serial.println("\r" + houz.deviceToString(device));
 	switch (device.id) {
 	case bedroom_light:
-    Serial.println("bedroom_light");
-		if (device.cmd == CMD_SET){
-			setCeilingLight(device.payload == 1);
-		}else{
-			delay(200);
-			houz.radioSend(CMD_VALUE, bedroom_light, lightOn ? 1 : 0);
-		};
+		Serial.println("[bedroom_light]");
+		if (device.cmd == CMD_SET) setCeilingLight(device.payload == 1);
+		houz.radioSend(CMD_VALUE, bedroom_light, lightOn ? 1 : 0);
 		break;
+
 	case bedroom_AC:
-		Serial.println("bedroom_AC");
-		if (device.cmd == CMD_SET)
-			ACsendCommand(device.payload == 1 ? acBghPowerOn : acBghPowerOff);
-		else
-			delay(200);
-			houz.radioSend(CMD_VALUE, bedroom_AC, airConditionerOn ? 1 : 0);
+		Serial.println("[bedroom_AC]");
+		if (device.cmd == CMD_SET) ACsendCommand(device.payload == 1 ? acBghPowerOn : acBghPowerOff);
+		houz.radioSend(CMD_VALUE, bedroom_AC, airConditionerOn ? 1 : 0);
 		break;
+
 	case bedroom_AC_temp:
-		Serial.println("bedroom_AC_temp");
+		Serial.println("[bedroom_AC_temp]");
 		if (device.cmd == CMD_SET) {
 			airConditionerTemp = (device.payload);
 			ACsendCommand(ACtempCode(airConditionerTemp));
 		}
 		else
-			delay(200);
 			houz.radioSend(CMD_VALUE, bedroom_AC_temp, airConditionerTemp);
 		break;
 	}
@@ -106,36 +91,33 @@ void handleCommand(deviceData device) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // IR Remote Control
-
-
 void infraredRead() {
 	decode_results results;
 	if (irrecv.decode(&results)) {  // Grab an IR code
 		if (results.value != 0xFFFFFFFF) {
-			Serial.print("\n\rIR recv> ");
+			Serial.print("\nIR.receive> ");
 			handleIrCode(results.value);
 			houz.statusLedBlink();
 		}
-		irrecv.resume();              // Prepare for the next value
+		irrecv.resume(); // Prepare for the next value
 	}
-
 }
 void handleIrCode(unsigned long irCode) {
 
 	if (irCode == 0xFFFFFFFF) { return; }
-	switch (irCode)
-	{
+	switch (irCode)	{
+
 	//turn light on
 	case irDvrCenter:
-		houz.radioSend(CMD_EVENT, bedroom_ir, bedroom_light);
 		setCeilingLight(!lightOn);
+		houz.radioSend(CMD_EVENT, bedroom_ir, bedroom_light);
 		break;
 
 	//turn on/off AC
 	case irDvrA:
-		houz.radioSend(CMD_EVENT, bedroom_switch, bedroom_AC);
 		airConditionerOn = !airConditionerOn;
 		ACsendCommand(airConditionerOn ? acBghPowerOn : acBghPowerOff);
+		houz.radioSend(CMD_EVENT, bedroom_switch, bedroom_AC);
 		break;
 
 		//TODO: AC temp up
@@ -152,7 +134,6 @@ void handleIrCode(unsigned long irCode) {
 		Serial.println("down");
 		break;
 
-
 	default:
 		Serial.print("unknown: 0x");
 		houz.radioSend(CMD_EVENT, bedroom_ir, irCode);
@@ -163,16 +144,18 @@ void handleIrCode(unsigned long irCode) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Wall switch
-
+unsigned long switchReadSt = 0;
 void switchRead() {
-	int buttonState;
-	buttonState = digitalRead(inSwitch);
-	if (buttonState == HIGH) return;
+	if (switchReadSt > millis()) return; //debounce
 
+	// check button
+	if (digitalRead(inSwitch) == HIGH) return;
 	Serial.println("switch> pressed..");
 	setCeilingLight(!lightOn);
+
+	// notify
 	houz.radioSend(CMD_EVENT, bedroom_switch, bedroom_light);
-	delay(500); //debounce
+	switchReadSt = millis() + 500;
 }
 
 
@@ -182,7 +165,6 @@ void switchRead() {
 void setCeilingLight(bool status) {
 	lightOn = status;
 	digitalWrite(lightOut, lightOn? LOW: HIGH);
-	delay(200);
 	houz.radioSend(CMD_VALUE, bedroom_light, status ? 1 : 0);
 }
 
@@ -194,19 +176,17 @@ void ACsendCommand(unsigned long acCode) {
 	//store status
 	if (acCode == acBghPowerOn) { 
 		airConditionerOn = 1; 
-		delay(200);
 		houz.radioSend(CMD_VALUE, bedroom_AC, 1);
 	}
 	if (acCode == acBghPowerOff) { 
 		airConditionerOn = 0; 
-		delay(200);
 		houz.radioSend(CMD_VALUE, bedroom_AC, 0);
 	}
 
 	//send command
 	for (int i = 0; i < 3; i++) {
 		irsend.sendLG(acCode, 28);
-		delay(40);
+		delay(50);
 	}
 	irrecv.enableIRIn();
 
