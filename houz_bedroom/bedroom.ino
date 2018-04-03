@@ -44,7 +44,7 @@ HouzDevices houz(bedroom_node, radio, swLight, Serial);
 void setup() {
 	Serial.begin(115200);
 	irrecv.enableIRIn();	//ir setup
-	houz.radioSetup();		//houz setup
+	houz.setup();		//houz setup
 
 	//switch setup
 	pinMode(inSwitch, INPUT_PULLUP);

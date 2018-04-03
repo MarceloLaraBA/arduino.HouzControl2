@@ -5,16 +5,16 @@ Author:	DarkAngel
 */
 
 #include <HouzDevices.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
 
 //light sensor
 #define lightSensorPin		A0
 
-//temperature
-#define ONE_WIRE_BUS		2
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature dallasTemp(&oneWire);
+//bosch bme280 weather module (3.3v)
+#define bme280_SDA			A4
+#define bme280_SCL			A5
+#include <BlueDot_BME280.h>
+BlueDot_BME280 bme280 = BlueDot_BME280();
+bool	bme280_online = false;
 
 //lights
 #define ceilingLightPin		8
@@ -22,7 +22,6 @@ DallasTemperature dallasTemp(&oneWire);
 #define ceilingLightLed		6
 
 //ir control
-#include <boarddefs.h>
 #include <IRremote.h>
 #include <IRremoteInt.h>
 //#define irRecvPin  6 //IRM-8601S
@@ -44,56 +43,89 @@ bool airConditionerOn = 0;
 int  airConditionerTemp = 24;
 //////////////////
 
+void weather_setup() {
+	bme280.parameter.communication =		0;		//Choose communication protocol
+	bme280.parameter.I2CAddress =			0x76;	//Choose I2C Address
+	bme280.parameter.sensorMode =			0b11;	//Choose sensor mode
+	bme280.parameter.IIRfilter =			0b100;	//Setup for IIR Filter
+	bme280.parameter.humidOversampling =	0b101;	//Setup Humidity Oversampling
+	bme280.parameter.tempOversampling =		0b101;	//Setup Temperature Ovesampling
+	bme280.parameter.pressOversampling =	0b101;	//Setup Pressure Oversampling 
+	bme280.parameter.pressureSeaLevel =		1013.25;//default value of 1013.25 hPa
+	bme280.parameter.tempOutsideCelsius =	15;		//default value of 15°C
+	bme280_online = (bme280.init() ==		0x60);
+
+	Serial.print("bme280: ");
+	Serial.println(bme280_online ? "online" : "offline");
+};
 
 void setup() {
 	Serial.begin(115200);
-	houz.radioSetup();
+	weather_setup();	//weather device
+	houz.setup();		//communications
 
 	//light sensor setup
 	pinMode(lightSensorPin, INPUT);
 
-	//temperature
-	dallasTemp.begin();
-
-	//IR 
-
 	//ceiling light
 	pinMode(ceilingLightPin, OUTPUT);
 	pinMode(ceilingLightSwitch, INPUT_PULLUP);
-
 }
-
 void loop() {
-	if (houz.hasData())	handleCommand(houz.getData()); 
+	if (houz.hasData())	handleCommand(houz.getData());
 	switchRead(); //lightSwitch touch
 }
 
+
 void handleCommand(deviceData device) {
 	switch (device.id) {
-	case external_lightSensor:
-		Serial.println("external_lightSensor");
-		houz.radioSend(CMD_VALUE, external_lightSensor, lightLevel());
+
+	//weather
+		
+	case external_weather:
+		Serial.println(F("[external_weather]"));
+		houz.radioSend(CMD_VALUE, external_temp, bme280.readTempC() * 100);
+		houz.radioSend(CMD_VALUE, external_humidity, bme280.readHumidity() * 100);
+		houz.radioSend(CMD_VALUE, external_pressure, bme280.readPressure() * 100);
+		//houz.radioSend(CMD_VALUE, external_light, lightLevel());
 		break;
 
-	case external_tempSensor:
-		Serial.println("external_tempSensor");
-		houz.radioSend(CMD_VALUE, external_tempSensor, temperature() * 100);
+	case external_light:
+		Serial.println(F("[external_lightSensor]"));
+		houz.radioSend(CMD_VALUE, external_light, lightLevel());
 		break;
 
-	case office_light:
-		Serial.println("office_light");
-		if (device.cmd == CMD_SET) setLight(device.payload == 1);
-		houz.radioSend(CMD_VALUE, office_light, lightOn? 1 : 0);
+	case external_temp:
+		Serial.println(F("[external_tempSensor]"));
+		houz.radioSend(CMD_VALUE, external_temp, bme280.readTempC() * 100);
 		break;
 
+	case external_humidity:
+		Serial.println(F("[external_humidity]"));
+		houz.radioSend(CMD_VALUE, external_humidity, bme280.readHumidity() * 100);
+		break;
+
+	case external_pressure:
+		Serial.println(F("[external_pressure]"));
+		houz.radioSend(CMD_VALUE, external_pressure, bme280.readPressure() * 100);
+		break;
+
+
+	//appliances
 	case office_switchLed:
-		Serial.println("office_switchLed");
+		Serial.println(F("[office_switchLed]"));
 		if (device.cmd == CMD_SET) analogWrite(ceilingLightLed, (int)device.payload);
 		houz.radioSend(CMD_VALUE, office_switchLed, analogRead(ceilingLightLed));
 		break;
 
+	case office_light:
+		Serial.println(F("[office_light]"));
+		if (device.cmd == CMD_SET) setLight(device.payload == 1);
+		houz.radioSend(CMD_VALUE, office_light, lightOn? 1 : 0);
+		break;
+
 	case office_AC:
-		Serial.println("office_AC");
+		Serial.println(F("[office_AC]"));
 		if (device.cmd == CMD_SET) {
 			airConditionerOn = (device.payload == 1);
 			ACsendCommand(airConditionerOn ? acBghPowerOn : acBghPowerOff);
@@ -102,6 +134,7 @@ void handleCommand(deviceData device) {
 		break;
 
 	case office_AC_temp:
+		Serial.println(F("[office_AC_temp]"));
 		if (device.cmd == CMD_SET) {
 			airConditionerTemp = (device.payload);
 			ACsendCommand(ACtempCode(airConditionerTemp));
@@ -110,7 +143,8 @@ void handleCommand(deviceData device) {
 		break;
 
 	default:
-		Serial.println("unhandled: " + houz.deviceToString(device));
+		Serial.print(F("[unhandled] "));
+		Serial.println(houz.deviceToString(device));
 		break;
 	}
 
@@ -123,17 +157,13 @@ u32 lightLevel() {
 	return analogRead(lightSensorPin);
 };
 
-float temperature() {
-	dallasTemp.requestTemperatures();
-	return dallasTemp.getTempCByIndex(0);// Why "byIndex"? You can have more than one IC on the same bus. 0 refers to the first IC on the wire
-};
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // I/O
 void switchRead() {
-	int buttonState;
-	buttonState = digitalRead(ceilingLightSwitch);
-	if (buttonState == HIGH) return;
+	if (digitalRead(ceilingLightSwitch) == HIGH) return;
+	Serial.println(F("[switch]\tpressed"));
 
 	setLight(!lightOn);
 
@@ -145,13 +175,12 @@ void switchRead() {
 bool setLight(bool status) {
 	lightOn = status;
 	digitalWrite(ceilingLightPin, status ? LOW : HIGH);
+
+	Serial.print(F("[ceilingLight]\t"));
+	Serial.println((lightOn) ? F("on") : F("off"));
 	houz.radioSend(CMD_VALUE, office_light, lightOn ? 1 : 0);
 	return true;
 };
-
-u8 getValue(u8 pin) {
-	return analogRead(pin);
-}
 
 
 
@@ -174,8 +203,6 @@ void ACsendCommand(unsigned long acCode) {
 		irsend.sendLG(acCode, 28);
 		delay(100);
 	}
-
-	//irrecv.enableIRIn();
 }
 
 unsigned long ACtempCode(u8 temp) {
@@ -193,3 +220,4 @@ unsigned long ACtempCode(u8 temp) {
 	default: return acBghTemp24;
 	}
 }
+

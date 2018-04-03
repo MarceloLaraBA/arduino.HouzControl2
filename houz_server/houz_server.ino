@@ -13,23 +13,14 @@
 #define rfCS 8  //RF pin 4 (CS)
 RF24 radio(rfCE, rfCS);
 HouzDevices houz(server_node, radio, rfRecvLed, Serial);
-deviceData device;
-
-// ir setup
-// #define irRecvPin	6	//IRM-8601S
-// IRrecv irrecv(irRecvPin);
 
 void setup() {
 	Serial.begin(115200);
-	Serial.println("{act:0, msg:\"");
-	houz.radioSetup();
-//	irrecv.enableIRIn();
-
-Serial.println("\"}");
+	Serial.println("*\\");
+	houz.setup();
+	Serial.println("\\*");
 }
 
 void loop() {
-	houz.radioRead();
-	houz.serialRead();
-  houz.taskManager();
+	houz.hasData();
 }

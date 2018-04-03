@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared Library", "Shared Library", "{AEA3EAA5-FC57-4840-8F50-F8F0BDC1F12E}"
 	ProjectSection(SolutionItems) = preProject
+		..\..\libraries\BlueDot_BME280_Library\BlueDot_BME280.cpp = ..\..\libraries\BlueDot_BME280_Library\BlueDot_BME280.cpp
+		..\..\libraries\BlueDot_BME280_Library\BlueDot_BME280.h = ..\..\libraries\BlueDot_BME280_Library\BlueDot_BME280.h
 		..\..\libraries\HouzControl2Lib\HouzDevices.cpp = ..\..\libraries\HouzControl2Lib\HouzDevices.cpp
 		..\..\libraries\HouzControl2Lib\HouzDevices.h = ..\..\libraries\HouzControl2Lib\HouzDevices.h
 	EndProjectSection
