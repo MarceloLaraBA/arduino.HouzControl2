@@ -16,9 +16,8 @@ HouzDevices houz(server_node, radio, rfRecvLed, Serial);
 
 void setup() {
 	Serial.begin(115200);
-	Serial.println("*\\");
+	Serial.println();
 	houz.setup();
-	Serial.println("\\*");
 }
 
 void loop() {

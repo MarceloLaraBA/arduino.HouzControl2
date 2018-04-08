@@ -9,6 +9,7 @@ IRM-8601S
 
 */
 
+#include <EEPROM.h>
 #include <QueueArray.h>
 #include <HouzInfrared.h>
 #include <HouzDevices.h>
@@ -24,7 +25,8 @@ IRM-8601S
 
 
 //functional
-bool lightOn = 1;
+#define lightOnAddr	0
+bool lightOn = 0;
 bool airConditionerOn = 0;
 int  airConditionerTemp = 24;
 bool tvOn = 0;
@@ -49,8 +51,8 @@ void setup() {
 	//switch setup
 	pinMode(inSwitch, INPUT_PULLUP);
 	pinMode(lightOut, OUTPUT);
-
-	setCeilingLight(1);
+	lightOn = EEPROM.read(lightOnAddr);
+	setCeilingLight(lightOn);
 }
 
 void loop()
@@ -163,8 +165,11 @@ void switchRead() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Ceiling Light
 void setCeilingLight(bool status) {
+	if (lightOn == status) return;
 	lightOn = status;
 	digitalWrite(lightOut, lightOn? LOW: HIGH);
+
+	EEPROM.write(lightOnAddr, lightOn);
 	houz.radioSend(CMD_VALUE, bedroom_light, status ? 1 : 0);
 }
 

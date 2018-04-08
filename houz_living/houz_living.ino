@@ -169,7 +169,7 @@ void handleCommand(deviceData device) {
 		break;
 
 	default:		  
-		Serial.println("[handleCommand] unknown " + houz.deviceToString(device));
+		Serial.println("[handleCommand] unknown " + device.raw);
 		break;
 	}				  
 };

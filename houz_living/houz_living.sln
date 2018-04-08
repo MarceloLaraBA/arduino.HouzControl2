@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2027
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "houz_living", "houz_living.vcxproj", "{8A22ADE7-1205-4490-812D-EE1728E28387}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{8EDEA565-06E8-48C9-B583-FF10413B157F}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\libraries\HouzControl2Lib\HouzDevices.cpp = ..\..\libraries\HouzControl2Lib\HouzDevices.cpp
+		..\..\libraries\HouzControl2Lib\HouzDevices.h = ..\..\libraries\HouzControl2Lib\HouzDevices.h
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8A22ADE7-1205-4490-812D-EE1728E28387}.Debug|x86.ActiveCfg = Debug|Win32
+		{8A22ADE7-1205-4490-812D-EE1728E28387}.Debug|x86.Build.0 = Debug|Win32
+		{8A22ADE7-1205-4490-812D-EE1728E28387}.Release|x86.ActiveCfg = Release|Win32
+		{8A22ADE7-1205-4490-812D-EE1728E28387}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4771571F-ECE3-4FFC-9552-EC1B3FF60CE8}
+	EndGlobalSection
+EndGlobal
