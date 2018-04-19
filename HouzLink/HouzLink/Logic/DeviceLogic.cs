@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using HouzLink.Communication;
 using HouzLink.Controllers;
 using HouzLink.Model;
 using HouzLink.Repository;
+using HouzLink.WebSocketMiddleware;
+using Newtonsoft.Json;
 
 namespace HouzLink.Logic
 {
@@ -13,8 +16,8 @@ namespace HouzLink.Logic
     {
         //todo: DI
         private DeviceRepo _deviceRepo => Startup.ContextServiceLocator.DeviceRepo;
-        private CommLogic _comm => Startup.ContextServiceLocator.CommLogic;
-
+        private ClientHandler _client => Startup.ContextServiceLocator.ClientHandler;
+        private CommDriver _comm => Startup.ContextServiceLocator.CommDriver;
 
         private ICollection<Device> Nodes { get; set; }
 
@@ -26,10 +29,41 @@ namespace HouzLink.Logic
         public void Setup()
         {
             LogController.LogAdd("DeviceLogic.Setup()");
-
-            if(!_comm.Connect()) return;
-
             UpdateNodes();
+        }
+
+
+        public async void UpdateDevice(CommandResult command)
+        {
+            Device device = _deviceRepo.GetById(command.Device.Id);
+            if (device == null)
+            {
+                return;
+            }
+
+            switch (command.Result)
+            {
+                case ResultEnm.SentOk:
+                    device.ValueDate = DateTime.Now;
+                    device.Status = Device.DeviceStatus.Awaiting;
+                    break;
+                case ResultEnm.SentRetry:
+                    device.ValueDate = DateTime.Now;
+                    device.Status = Device.DeviceStatus.Unknown;
+                    break;
+                case ResultEnm.SentFail:
+                    device.ValueDate = DateTime.Now;
+                    device.Status = Device.DeviceStatus.Error;
+                    break;
+                case ResultEnm.Received:
+                    device.Value = device.Payload = command.Device.Payload;
+                    device.ValueDate = DateTime.Now;
+                    device.Status = Device.DeviceStatus.Ok;
+                    break;
+            }
+            _deviceRepo.Update(device);
+            await _client.SendMessage(new SocketMessageDto(SocketMessageTypeEnm.DeviceUpdate,
+                JsonConvert.SerializeObject(device)));
         }
 
         public void UpdateNodes()
@@ -52,6 +86,10 @@ namespace HouzLink.Logic
         }
 
 
-
+        public bool QueryDevice(int id)
+        {
+            Device device = _deviceRepo.GetById(id);
+            return SendCommand(device, Device.Command.QUERY, 0);
+        }
     }
 }

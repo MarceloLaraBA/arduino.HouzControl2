@@ -4,7 +4,7 @@ body, html { font-family: Roboto,sans-serif; font-size: 8pt; height: 100%; margi
 button, div, h1, h2, h3, h4, h5, h6, i, label, li, p, span, ul, select, textarea, dt, dd { margin: 0; padding: 0; font-weight: 400; font-size: 1em; list-style: none; transition: all .25s ease-in-out; font-family: Roboto, 'Segoe UI',sans-serif; overflow: hidden; box-sizing: border-box; }
 a, a:hover, a:visited { color: #222; text-decoration: none }
 .clr { clear: both }
-input, select, textarea { background-color: #eee; border: 1px solid #444; color: #222; padding: .25em; font-family: inherit; display: block }
+input, select, textarea {background-color: #eee;border: 1px solid #444;color: #222;padding: .25em;font-family: inherit;display: block;width:  100%;}
     button:focus, input:focus { outline: 0 }
 *:hover, *:before, *:after { transition: all .25s; }
 button { display: block; background-color: #333; border: 1px solid #666; cursor: pointer; color: #eee; padding: .5em; }
@@ -17,19 +17,36 @@ div::-webkit-scrollbar-track { background: #333; }
 div::-webkit-scrollbar-thumb { background: #666; }
 
 /**/
+.mainwrapper { display: flex; width: 100%; height: 100%;}
 
+/**/
 ul[role="status"]>li>span { float: right;}
 ul[role="status"]>li { padding: .5em 1em;}
 
-ul[role="toolbar"] { display: flex; flex-direction: row; justify-items: flex-end;}
-ul[role="toolbar"] > li { padding: .75em; margin: .25em; background-color: #275773; cursor: pointer;}
+ul[role="toolbar"] {display: flex;justify-content: flex-end;}
+ul[role="toolbar"] > li {padding: .75em;margin: .25em;background-color: #275773;cursor: pointer;}
+    ul[role="toolbar"] > li.nobtn { padding: 0; cursor: unset}
+    ul[role="toolbar"] > li>input { height: 100%}
 
+ul[role="log"]>li {padding: .25em;margin: .25em;background-color: #47444c;}
 
 /**/
-aside { width: 25%; position: fixed; top: 0; background-color: #333; color: #fff; height: 100%; }
-aside h2 {padding: 1em;background-color: #275773; font-weight: 600;}
+#comm { width: 25%; background-color: #333; color: #fff; height: 100%; }
+#comm h2 { padding: 1em; background-color: #275773; font-weight: 600; }
 
-section {margin-left: 25%;}
+section {
+    width: 50%;
+    flex: 0 1 auto;
+
+}
 
 
 ul#log>li { padding: .15em; background-color: #fafafa;margin: .15em;}
+
+/**/
+#device_list h3 {border-left: .75em solid #666; background-color: #444;padding:  .5em;}
+    #device_list h3.Ok {border-left-color: #3F3;}
+    #device_list h3.Error { border-left-color: #F33; }
+#device_list h3 .value {float: right}
+#device_list input { width: 4em; text-align: right;}
+

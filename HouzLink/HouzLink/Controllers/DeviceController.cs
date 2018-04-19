@@ -1,0 +1,32 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using HouzLink.Communication;
+using HouzLink.Logic;
+using HouzLink.Model;
+using HouzLink.Repository;
+using Microsoft.AspNetCore.Mvc;
+
+namespace HouzLink.Controllers
+{
+    [Route("api/[controller]")]
+    public class DeviceController : Controller
+    {
+        private DeviceRepo _deviceRepo => Startup.ContextServiceLocator.DeviceRepo;
+        private DeviceLogic _deviceLogic => Startup.ContextServiceLocator.DeviceLogic;
+
+        [HttpGet]
+        public IEnumerable<Device> GetAll() => _deviceRepo.GetAll();
+
+        [HttpGet]
+        [Route("{id}")]
+        public Device GetById(int id) => _deviceRepo.GetById(id);
+
+        // GET api/comm
+        [HttpGet]
+        [Route("{id}/query")]
+        public bool QueryDevice(int id) => _deviceLogic.QueryDevice(id);
+
+    }
+}

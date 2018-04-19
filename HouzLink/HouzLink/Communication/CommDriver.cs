@@ -10,24 +10,24 @@ using HouzLink.Controllers;
 
 namespace HouzLink.Communication
 {
-    public class CommLogic : IDisposable
+    public class CommDriver : IDisposable
     {
 
-        public string ComPort { get; set; } = "COM3";
+        public string ComPort { get; private set; } = "COM3";
         public int BaudRate { get; set; } = 115200;
 
         public StatusEnm Status => _serialPort != null && _serialPort.IsOpen ? StatusEnm.Online : StatusEnm.Offline;
 
-        public StatusEnm LinkStatus => _linkStatus;
-        private static StatusEnm _linkStatus = StatusEnm.Booting;
+        public StatusEnm LinkStatus { get; private set; }
 
-        public CommLogic()
+        public CommDriver()
         {
-            LogController.LogAdd("CommLogic.ctr");
+            LogController.LogAdd("CommController.ctr");
         }
 
         //events
-        public static event EventHandler<string> CommandReceived;
+        public event EventHandler<string> CommandReceived;
+        public event EventHandler<StatusEnm> StatusChanged;
         private static readonly ConcurrentQueue<string> _sendQueue = new ConcurrentQueue<string>();
 
         //hardware stuff
@@ -47,7 +47,7 @@ namespace HouzLink.Communication
                 if (_serialPort.IsOpen) _serialPort.Close();
             }
 
-            LogController.LogAdd("CommLogic.Connect()");
+            LogController.LogAdd("CommController.Connect()");
             try
             {
                 //scan comm ports
@@ -60,31 +60,31 @@ namespace HouzLink.Communication
                 _serialPort.PinChanged += Comm_PinChanged;
                 _serialPort.DtrEnable = true;
                 _serialPort.Open();
-                _linkStatus = StatusEnm.Booting;
-                LogController.LogAdd("CommLogic.Connect.ok");
+                SetStatus(StatusEnm.Booting);
+                LogController.LogAdd("CommController.Connect.ok");
                 return true;
             }
             catch (UnauthorizedAccessException e)
             {
-                LogController.LogAdd($"CommLogic.Connect.error: {e.GetBaseException().Message}");
+                LogController.LogAdd($"CommController.Connect.error: {e.GetBaseException().Message}");
                 return false;
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
-                LogController.LogAdd($"CommLogic.Connect.error: {e.GetBaseException().Message}");
+                LogController.LogAdd($"CommController.Connect.error: {e.GetBaseException().Message}");
                 return false;
             }
         }
 
         private void Comm_PinChanged(object sender, SerialPinChangedEventArgs e)
         {
-            LogController.LogAdd($"CommLogic.PinChanged: {e}");
+            LogController.LogAdd($"CommController.PinChanged: {e}");
         }
 
         public bool Disconnect()
         {
-            LogController.LogAdd("CommLogic.Disconnect()");
+            LogController.LogAdd("CommController.Disconnect()");
             if (_serialPort == null || !_serialPort.IsOpen) return true;
             _serialPort.Close();
             return true;
@@ -98,26 +98,27 @@ namespace HouzLink.Communication
         private void Comm_DataReceivedBuffer(object sender, SerialDataReceivedEventArgs e)
         {
             _busy = true;
-            LogController.LogAdd("CommLogic.DataReceived()");
             _buffer += _serialPort.ReadExisting();
             _lastOk = DateTime.Now;
             if (!_buffer.Contains(_newLine)) return;
-            LogController.LogAdd($"CommLogic.DataReceived> hasNewLine: {_buffer}");
-
             foreach (Match m in Regex.Matches(_buffer, @"\[(.*?)\]"))
             {
-                LogController.LogAdd($"CommLogic.DataReceived> match: {m.Groups[1].ToString()}");
+                LogController.LogAdd($"CommController.DataReceived> match: {m.Groups[1].ToString()}");
                 CommandReceived?.Invoke(this, m.Groups[1].ToString());
             }
             _busy = false;
 
             //link goes online
-            if (_buffer == "[online]\r\n")
+            switch (_buffer)
             {
-                _linkStatus = StatusEnm.Online;
-                if (_sendQueue.Any()) Deliver();
+                case "[online]\r\n":
+                    SetStatus(StatusEnm.Online);
+                    if (_sendQueue.Any()) Dispatch();
+                    break;
+                case "[offline]\r\n":
+                    SetStatus(StatusEnm.Offline);
+                    break;
             }
-            if (_buffer == "[offline]\r\n") _linkStatus = StatusEnm.Offline;
 
             _buffer = string.Empty;
         }
@@ -135,30 +136,38 @@ namespace HouzLink.Communication
             Offline
         }
 
+        private StatusEnm SetStatus(StatusEnm newStatus)
+        {
+            if (LinkStatus == newStatus) return newStatus;
+            LinkStatus = newStatus;
+            StatusChanged?.Invoke(this, LinkStatus);
+            return newStatus;
+        }
+
         public bool Send(string str)
         {
             if (!Connect()) return false;
             _sendQueue.Enqueue(str+"\n");
-            LogController.LogAdd($"CommLogic.Send: {str} [{_sendQueue.Count}]");
+            LogController.LogAdd($"CommController.Send: {str} [{_sendQueue.Count}]");
 
             if (_deliveryLock) return true;
             new Thread(() => {
                 Thread.CurrentThread.IsBackground = true;
-                Deliver();
+                Dispatch();
             }).Start();
             return true;
         }
 
         private static bool _deliveryLock = false;
 
-        private void Deliver()
+        private void Dispatch()
         {
-            if(_linkStatus != StatusEnm.Online) return;
+            if(LinkStatus != StatusEnm.Online) return;
             _deliveryLock = true;
 
             while (_busy)
             {
-                LogController.LogAdd($"CommLogic.Deliver(): busy..");
+                LogController.LogAdd($"CommController.Dispatch(): busy..");
                 Thread.Sleep(20);
             }
 
@@ -166,7 +175,7 @@ namespace HouzLink.Communication
             {
                 if (_sendQueue.TryDequeue(out string sendString))
                 {
-                    LogController.LogAdd($"CommLogic.Deliver(): {sendString}");
+                    LogController.LogAdd($"CommController.Dispatch(): {sendString}");
                     _serialPort.Write(sendString);
                     Thread.Sleep(2000);
                 }

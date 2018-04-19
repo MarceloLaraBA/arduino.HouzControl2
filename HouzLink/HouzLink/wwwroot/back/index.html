@@ -6,32 +6,55 @@
     <link href="back.css" rel="stylesheet" />
 </head>
 <body>
-    <aside>
-        <div class="group">
-            <h2>CommPort</h2>
-            <ul role="status">
-                <li>Port <span id="comm_port">--</span></li>
-                <li>Baud <span id="comm_baudrate">--</span></li>
-                <li>Status <span id="comm_status">--</span></li>
-                <li>Link <span id="comm_link">--</span></li>
-            </ul>
+    <div class="mainwrapper">
+        <section id="comm">
+            <div class="group">
+                <h2>Socket</h2>
+                <ul role="status">
+                    <li>Server <span id="socket_status">--</span></li>
+                </ul>
+            </div>
+            <div class="group">
+                <h2>CommPort</h2>
+                <ul role="status">
+                    <li>Port <span id="comm_port">--</span></li>
+                    <li>Baud <span id="comm_baudrate">--</span></li>
+                    <li>Status <span id="comm_status">--</span></li>
+                    <li>Link <span id="comm_link">--</span></li>
+                </ul>
+                <ul role="toolbar">
+                    <li id="comm_connect">connect</li>
+                    <li id="comm_disconnect">disconnect</li>
+                    <li id="comm_refresh">refresh</li>
+                </ul>
+            </div>
+            <div class="group">
+                <h2>CommClient</h2>
+                <div>
+                    <input type="text" id="commclient_sendtext" />
+                    <button id="commclient_sendbutton">send</button>
+                </div>
+                <ul id="comm_log" role="log"></ul>
+            </div>
+        </section>
+        <section id="devices">
+            <h2>Devices</h2>
             <ul role="toolbar">
-                <li id="comm_connect">connect</li>
-                <li id="comm_disconnect">disconnect</li>
-                <li id="comm_refresh">refresh</li>
+                <li id="device_getall">all</li>
+                <li id="device_queryall">query all</li>
             </ul>
-        </div>
-        <div class="group">
-            <h2>CommClient</h2>
-            <input type="text" id="commclient_sendtext"/>
-            <button id="commclient_sendbutton">send</button>
-        </div>
-
-    </aside>
-<section>
-    <button id="log_refresh">refresh</button>
-    <ul id="log"></ul>
-</section>
-<script src="back.js"></script>
+            <ul id="device_list"></ul>
+        </section>
+        <section>
+            <button id="log_refresh">refresh</button>
+            <ul id="log"></ul>
+        </section>
+    </div>
+    <script src="/src/enum.js"></script>
+    <script src="/src/sockets.js"></script>
+    <script src="/src/ui.js"></script>
+    <script src="back.comm.js"></script>
+    <script src="back.devices.js"></script>
+    <script src="back.js"></script>
 </body>
 </html>

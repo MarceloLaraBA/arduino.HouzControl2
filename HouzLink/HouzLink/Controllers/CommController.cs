@@ -10,7 +10,7 @@ namespace HouzLink.Controllers
     [Route("api/[controller]")]
     public class CommController : Controller
     {
-        private CommLogic _comm => Startup.ContextServiceLocator.CommLogic;
+        private Communication.CommDriver _comm => Startup.ContextServiceLocator.CommDriver;
 
         // GET api/comm
         [HttpGet]
@@ -18,7 +18,7 @@ namespace HouzLink.Controllers
         {
             port = _comm.ComPort,
             bitrate = _comm.BaudRate,
-            open = _comm.Status == CommLogic.StatusEnm.Online,
+            open = _comm.Status == Communication.CommDriver.StatusEnm.Online,
             link = _comm.LinkStatus
         };
 
@@ -43,16 +43,25 @@ namespace HouzLink.Controllers
         {
             return _comm.Send(str);
         }
-
-
-
-        public class CommDto
+    }
+    public class CommDto
+    {
+        public CommDto()
         {
-            public string port { get; set; }
-            public int bitrate { get; set; }
-            public bool open { get; set; }
-            public CommLogic.StatusEnm link { get; set; }
         }
 
+        public CommDto(Communication.CommDriver commCtrl)
+        {
+            port = commCtrl.ComPort;
+            bitrate = commCtrl.BaudRate;
+            open = commCtrl.Status == Communication.CommDriver.StatusEnm.Online;
+            link = commCtrl.LinkStatus;
+        }
+
+        public string port { get; set; }
+        public int bitrate { get; set; }
+        public bool open { get; set; }
+        public Communication.CommDriver.StatusEnm link { get; set; }
     }
+
 }

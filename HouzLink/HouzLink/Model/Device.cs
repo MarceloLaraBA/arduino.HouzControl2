@@ -5,6 +5,27 @@ using System.Threading.Tasks;
 
 namespace HouzLink.Model
 {
+    public class CommandResult
+    {
+        public ResultEnm Result { get; set; }
+        public Device Device { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Result}: {Device}";
+        }
+    }
+
+    public enum ResultEnm
+    {
+        SentOk = 1,
+        SentRetry = 2,
+        SentFail = 3,
+        Received = 4
+    }
+
+
+
     public class Device
     {
         public Device()
@@ -37,7 +58,7 @@ namespace HouzLink.Model
         public DeviceStatus Status { get; set; }
         public DeviceTypeEnm DeviceType { get; set; }
         public String ValueStr { get; set; }
-        public Int32 Node { get; }
+        public Int32 Node { get; set; }
 
         //logic related props
         public bool IncludeInUpdate { get; set; }
@@ -68,7 +89,9 @@ namespace HouzLink.Model
         {
             Unknown = 0,
             Ok = 1,
-            Error = 2
+            Awaiting = 2,
+            Error = 3,
+            NodeDown = 4
         }
         public enum DeviceTypeEnm
         {

@@ -1,29 +1,49 @@
-var comm = {
-    refresh: () => {
-        ui.getData("comm").then((x) => {
-            ui.set("comm_port", x.port);
-            ui.set("comm_baudrate", x.bitrate);
-            ui.set("comm_status", x.open ? "open" : "closed");
-            ui.set("comm_link", comm.statusEnm[x.link]);
-        });
-    },
+const socket = {
+    _socket: undefined,
     connect: () => {
-        ui
-            .getText("comm", "POST")
-            .then(comm.refresh);
+        socket._socket = new Socket({
+            onStatusChanged: socket.onStatusChanged,
+            onReceive: socket.onReceive,
+            onClose: socket.onClose
+        });
+        socket._socket.connect()
+            .then((x) => {
+                ui.set("#socket_status", "open");
+            });
     },
-    disconnect: () => {
-        ui
-            .getText("comm", "DELETE")
-            .then(comm.refresh);
-    },
-    statusEnm: ["booting", "online", "offline"],
+    onStatusChanged: (x) => {
 
-    sendraw: (x) => {
-        ui.getText("comm/send", "POST", document.getElementById("commclient_sendtext").value)
-            .then(log.refresh);
+
+        console.log("ss.onStatusChanged: ", x);
+    },
+    onClose: (x) => {
+        ui.set("#socket_status", "closed");
+        console.log("ss.onClose: ", x);
+        setTimeout(socket.connect, 5000);
+    },
+    onReceive: (x) => {
+        const data = JSON.parse(x.data);
+
+        console.log("ss.onReceive: ", data);
+        switch (data.Type) {
+            case 0: //comm status
+                comm.render(JSON.parse(data.Data));
+                break;
+            case 1: //comm log
+                ui.addLi(document.getElementById("comm_log"), data.Data);
+                break;
+            case 2: //device update
+                var dev = JSON.parse(data.Data);
+                ui.set("#device_list li[device_id='dev"+dev.Id+"'] .value", dev.Value);
+                break;
+            default:
+                console.log("type:", data.Type);
+            }
+
     }
-};
+
+}
+
 
 var log = {
     refresh: () => {
@@ -37,54 +57,24 @@ var log = {
             }
         });
     }
-
 };
 
-const ui = {
-    // FAKE API ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    apiUri: function (api) { return window.location.origin + "/api/" + (api || ""); },
-    getText: function (url, method, data) {
-        return new Promise(function (resolve, reject) {
-            const xhr = new XMLHttpRequest();
-            const d = data ? JSON.stringify(data) : "";
-            xhr.open(method ? method : "GET", ui.apiUri(url));
-            xhr.setRequestHeader("Content-Type", "application/json");
-            xhr.onload = function () { if (xhr.status !== 404) resolve(xhr.responseText); else reject(xhr); };
-            xhr.onerror = function () { reject(xhr) };
-            xhr.send(d);
-        });
-    },
-    getData: function (url, method, data) {
-        return this.getText(url, method, data).then(JSON.parse);
-    },
-    parseElem: function (htmlString) {
-        var elem = document.createElement('div');
-        elem.innerHTML = htmlString;
-        return elem.firstChild;
-    },
-    set: function(elemId, str) {
-        const elem = document.getElementById(elemId);
-        if (elem === undefined || elem ===null) return;
-        elem.innerHTML = str;
-    },
-    bind: function(elemId, fx) {
-        const elem = document.getElementById(elemId);
-        if (elem === undefined || elem === null) return;
-        elem.addEventListener("click", fx);
-    }
-};
 
 
 (function () {
+    ui.bind("device_getall", device.queryall);
 
     //comm
     ui.bind("comm_connect", comm.connect);
     ui.bind("comm_disconnect", comm.disconnect);
     ui.bind("comm_refresh", comm.refresh);
-
     ui.bind("commclient_sendbutton", comm.sendraw);
 
     //log
     ui.bind("log_refresh", log.refresh);
+
+
+    //socket connect
+    socket.connect();
 
 })();

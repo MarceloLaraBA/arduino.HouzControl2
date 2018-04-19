@@ -144,7 +144,7 @@ void handleCommand(deviceData device) {
 
 	default:
 		Serial.print(F("[unhandled] "));
-		Serial.println(houz.deviceToString(device));
+		Serial.println(device.raw);
 		break;
 	}
 
