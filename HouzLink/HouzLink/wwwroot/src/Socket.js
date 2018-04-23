@@ -43,8 +43,14 @@ Socket.prototype = {
             o._ws.onmessage = (ev) => {
                 //console.log("socket.receive>", ev.data);
                 try {
-                    if (typeof o.onReceive === "function") 
-                        o.onReceive(JSON.parse(ev.data));
+                    const msg = JSON.parse(ev.data);
+                    if (msg.messageType > 2 && (typeof o.onReceive === "function"))
+                        try {
+                            o.onReceive(msg);
+                        } catch (e) {
+                            console.log("socket.receive.onReceive error> [",e,"]", ev.data);
+                        } 
+                        
                 } catch (e) {
                     console.log("socket.receive> [unknown]", ev.data);
                 }

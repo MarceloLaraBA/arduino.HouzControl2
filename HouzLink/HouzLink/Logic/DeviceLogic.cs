@@ -8,6 +8,7 @@ using HouzLink.Controllers;
 using HouzLink.Model;
 using HouzLink.Repository;
 using HouzLink.WebSocketMiddleware;
+using Microsoft.AspNetCore.Mvc.Internal;
 using Newtonsoft.Json;
 
 namespace HouzLink.Logic
@@ -41,6 +42,7 @@ namespace HouzLink.Logic
                 return;
             }
 
+            //todo: update node status
             switch (command.Result)
             {
                 case ResultEnm.SentOk:
@@ -56,14 +58,28 @@ namespace HouzLink.Logic
                     device.Status = Device.DeviceStatus.Error;
                     break;
                 case ResultEnm.Received:
-                    device.Value = device.Payload = command.Device.Payload;
+                    device.Payload = command.Device.Payload;
                     device.ValueDate = DateTime.Now;
                     device.Status = Device.DeviceStatus.Ok;
+
+                    switch (device.DeviceType)
+                    {
+                        case Device.DeviceTypeEnm.Humidity:
+                        case Device.DeviceTypeEnm.Temp:
+                            device.Value = (float)device.Payload / 100;
+                            device.ValueStr = device.Value.ToString("F1");
+                            break;
+                        case Device.DeviceTypeEnm.Pressure:
+                            device.Value = (float)device.Payload / 100;
+                            device.ValueStr = device.Value.ToString("F1");
+                            break;
+                        default: device.Value = device.Payload; break;
+                    }
+
                     break;
             }
             _deviceRepo.Update(device);
-            await _client.SendMessage(new SocketMessageDto(SocketMessageTypeEnm.DeviceUpdate,
-                JsonConvert.SerializeObject(device)));
+            await _client.SendMessage(MessageType.DeviceUpdate, device);
         }
 
         public void UpdateNodes()
@@ -74,7 +90,7 @@ namespace HouzLink.Logic
             }
         }
 
-        public bool SendCommand(Device device, Device.Command command, int payload)
+        public bool SendCommand(Device device, Device.Command command, long payload)
         {
             string cmd = string.Empty;
             cmd += $"N{device.Node:X}";                    // node selection
@@ -90,6 +106,12 @@ namespace HouzLink.Logic
         {
             Device device = _deviceRepo.GetById(id);
             return SendCommand(device, Device.Command.QUERY, 0);
+        }
+
+        public bool SendCommand(int deviceId, Device.Command command, long payload)
+        {
+            Device dev = _deviceRepo.GetById(deviceId);
+            return dev != null && SendCommand(dev, command, payload);
         }
     }
 }

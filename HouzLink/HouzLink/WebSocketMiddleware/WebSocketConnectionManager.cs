@@ -40,7 +40,7 @@ namespace HouzLink.WebSocketMiddleware
 
         public void AddSocket(WebSocket socket)
         {
-            _sockets.TryAdd(CreateConnectionId(), socket);
+            _sockets.TryAdd(NewGuid, socket);
         }
 
         public void AddToGroup(string socketID, string groupID)
@@ -48,7 +48,6 @@ namespace HouzLink.WebSocketMiddleware
             if (_groups.ContainsKey(groupID))
             {
                 _groups[groupID].Add(socketID);
-
                 return;
             }
 
@@ -73,9 +72,7 @@ namespace HouzLink.WebSocketMiddleware
                                     cancellationToken: CancellationToken.None).ConfigureAwait(false);
         }
 
-        private string CreateConnectionId()
-        {
-            return Guid.NewGuid().ToString();
-        }
+        private string NewGuid => Guid.NewGuid().ToString();
+
     }
 }

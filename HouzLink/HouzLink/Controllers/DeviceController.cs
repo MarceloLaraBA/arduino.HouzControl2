@@ -27,6 +27,10 @@ namespace HouzLink.Controllers
         [HttpGet]
         [Route("{id}/query")]
         public bool QueryDevice(int id) => _deviceLogic.QueryDevice(id);
+        // GET api/comm
+        [HttpGet]
+        [Route("{id}/set/{payload}")]
+        public bool SendCommand(int id, int payload) => _deviceLogic.SendCommand(id, Device.Command.SET, payload);
 
     }
 }

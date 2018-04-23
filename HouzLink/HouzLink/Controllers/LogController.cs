@@ -14,6 +14,7 @@ namespace HouzLink.Controllers
         public static void LogAdd(string logTxt)
         {
             _houzLog.Add($"{_houzLog.Count}.{logTxt}");
+            Console.WriteLine($"{_houzLog.Count}: {logTxt}");
         }
 
         // GET api/values

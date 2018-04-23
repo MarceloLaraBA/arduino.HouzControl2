@@ -1,10 +1,10 @@
-﻿"use strict";
+"use strict";
 const ui = {
     apiUri: function (api) { return window.location.origin + "/api/" + (api || ""); },
     getText: function (url, method, data) {
         return new Promise(function (resolve, reject) {
             const xhr = new XMLHttpRequest();
-            const d = data ? JSON.stringify(data) : "";
+            const d = data ? typeof data==="string"?data:JSON.stringify(data) : "";
             xhr.open(method ? method : "GET", ui.apiUri(url));
             xhr.setRequestHeader("Content-Type", "application/json");
             xhr.onload = function () { if (xhr.status !== 404) resolve(xhr.responseText); else reject(xhr); };
@@ -43,7 +43,18 @@ const ui = {
             }
         };
         return html;
+    },
+
+    //ux
+    collapsableNodes: () => {
+        for (const nodeElem of document.querySelectorAll("div.node>h2")) {
+            nodeElem.addEventListener("click",
+                function () {
+                    nodeElem.parentNode.classList.toggle("collapsed");
+                });
+        }
     }
+
 };
 
 //

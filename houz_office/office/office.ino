@@ -107,7 +107,7 @@ void handleCommand(deviceData device) {
 
 	case external_pressure:
 		Serial.println(F("[external_pressure]"));
-		houz.radioSend(CMD_VALUE, external_pressure, bme280.readPressure() * 100);
+		houz.radioSend(CMD_VALUE, external_pressure, bme280.readPressure() * 10);
 		break;
 
 

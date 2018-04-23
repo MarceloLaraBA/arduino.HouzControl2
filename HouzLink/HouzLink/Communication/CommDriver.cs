@@ -67,11 +67,13 @@ namespace HouzLink.Communication
             catch (UnauthorizedAccessException e)
             {
                 LogController.LogAdd($"CommController.Connect.error: {e.GetBaseException().Message}");
+                SetStatus(StatusEnm.ComClosed);
                 return false;
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
+                SetStatus(StatusEnm.ComClosed);
                 LogController.LogAdd($"CommController.Connect.error: {e.GetBaseException().Message}");
                 return false;
             }
@@ -131,6 +133,7 @@ namespace HouzLink.Communication
 
         public enum StatusEnm
         {
+            ComClosed,
             Booting,
             Online,
             Offline

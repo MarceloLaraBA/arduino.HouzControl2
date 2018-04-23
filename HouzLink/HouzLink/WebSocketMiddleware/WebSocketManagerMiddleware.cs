@@ -95,7 +95,10 @@ namespace HouzLink.WebSocketMiddleware
     {
         Text,
         ClientMethodInvocation,
-        ConnectionEvent
+        ConnectionEvent,
+        CommLog,
+        CommStatus,
+        DeviceUpdate
     }
 
     public class Message

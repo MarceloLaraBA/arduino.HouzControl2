@@ -52,8 +52,8 @@ namespace HouzLink.Model
         public Int32 Id { get; set; }
         public Command Cmd { get; set; }
         public MediaEnm Media { get; set; }
-        public Int32 Payload { get; set; }
-        public Int32 Value { get; set; }
+        public long Payload { get; set; }
+        public float Value { get; set; }
         public DateTime ValueDate { get; set; }
         public DeviceStatus Status { get; set; }
         public DeviceTypeEnm DeviceType { get; set; }

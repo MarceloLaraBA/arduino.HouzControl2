@@ -29,7 +29,7 @@ namespace HouzLink.Logic
         }
 
         private async void CommOnStatusChanged(object sender, CommDriver.StatusEnm statusEnm) =>
-            await _client.SendMessage(new SocketMessageDto(SocketMessageTypeEnm.CommStatus, JsonConvert.SerializeObject(new CommDto(_comm))));
+            await _client.SendMessage(MessageType.CommStatus, new CommDto(_comm));
 
 
         private async void CommOnCommandReceived(object sender, string s)
@@ -38,7 +38,7 @@ namespace HouzLink.Logic
             var result = ParseCommandResult(s);
 
             //send to debug client
-            await _client.SendMessage(new SocketMessageDto(SocketMessageTypeEnm.CommReceived, s));
+            await _client.SendMessage(MessageType.CommLog, s);
         }
         private CommandResult ParseCommandResult(string inCommand)
         {
@@ -52,7 +52,7 @@ namespace HouzLink.Logic
             if (Int32.TryParse(inCommand.Substring(2, 1), out int devId)) device.Node = devId;
             device.Cmd = (Device.Command)int.Parse(inCommand.Substring(4, 1), System.Globalization.NumberStyles.HexNumber);
             device.Id = int.Parse(inCommand.Substring(5, 2), System.Globalization.NumberStyles.HexNumber);
-            device.Payload = int.Parse(inCommand.Substring(7, 4), System.Globalization.NumberStyles.HexNumber);
+            device.Payload = long.Parse(inCommand.Substring(7, 4), System.Globalization.NumberStyles.HexNumber);
 
             result.Device = device;
             _deviceLogic.UpdateDevice(result);
