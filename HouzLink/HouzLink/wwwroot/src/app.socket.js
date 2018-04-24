@@ -8,6 +8,7 @@ const socket = {
         });
         socket._socket.connect()
             .then((x) => {
+                console.log("socket.connect:", x)
                 ui.set("#socket_status", "open");
             });
     },

@@ -13,8 +13,17 @@ namespace HouzLink.Controllers
     [Route("api/[controller]")]
     public class DeviceController : Controller
     {
-        private DeviceRepo _deviceRepo => Startup.ContextServiceLocator.DeviceRepo;
-        private DeviceLogic _deviceLogic => Startup.ContextServiceLocator.DeviceLogic;
+        private readonly IDeviceRepo _deviceRepo;
+        private readonly IDeviceLogic _deviceLogic;
+
+        public DeviceController(IDeviceRepo deviceRepo, IDeviceLogic deviceLogic)
+        {
+            _deviceRepo = deviceRepo;
+            _deviceLogic = deviceLogic;
+        }
+
+        //private DeviceRepo _deviceRepo => Startup.ContextServiceLocator.DeviceRepo;
+        //private DeviceLogic _deviceLogic => Startup.ContextServiceLocator.DeviceLogic;
 
         [HttpGet]
         public IEnumerable<Device> GetAll() => _deviceRepo.GetAll();

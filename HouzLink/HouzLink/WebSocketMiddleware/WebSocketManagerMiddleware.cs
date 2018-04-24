@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 namespace HouzLink.WebSocketMiddleware
 {
-    public class WebSocketManagerMiddleware
+    public class WebSocketManagerMiddleware : IWebSocketManagerMiddleware
     {
         private readonly RequestDelegate _next;
         private WebSocketHandler _webSocketHandler { get; set; }

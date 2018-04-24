@@ -8,7 +8,7 @@ namespace HouzLink.Repository
 {
     public class NodeRepo
     {
-        private static DeviceRepo _deviceRepo => Startup.ContextServiceLocator.DeviceRepo;
+        //private static DeviceRepo _deviceRepo => Startup.ContextServiceLocator.DeviceRepo;
         //public IEnumerable<Node> GetAll() => _deviceRepo.GetAll().Where(x => x.DeviceType == Device.DeviceTypeEnm.Node);
 
     }

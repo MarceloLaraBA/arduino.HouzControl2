@@ -9,15 +9,15 @@ using Newtonsoft.Json.Serialization;
 
 namespace HouzLink.WebSocketMiddleware
 {
-    public abstract class WebSocketHandler
+    public abstract class WebSocketHandler : IWebSocketHandler
     {
-        protected WebSocketConnectionManager WebSocketConnectionManager { get; set; }
+        protected IWebSocketConnectionManager WebSocketConnectionManager { get; set; }
         private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings()
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver()
         };
 
-        protected WebSocketHandler(WebSocketConnectionManager webSocketConnectionManager)
+        protected WebSocketHandler(IWebSocketConnectionManager webSocketConnectionManager)
         {
             WebSocketConnectionManager = webSocketConnectionManager;
         }

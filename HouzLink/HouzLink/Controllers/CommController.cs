@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using HouzLink.Communication;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,14 @@ namespace HouzLink.Controllers
     [Route("api/[controller]")]
     public class CommController : Controller
     {
-        private Communication.CommDriver _comm => Startup.ContextServiceLocator.CommDriver;
+        private readonly ICommDriver _comm;
+
+        public CommController(ICommDriver comm)
+        {
+            _comm = comm;
+        }
+
+        //private Communication.CommDriver _comm => Startup.ContextServiceLocator.CommDriver;
 
         // GET api/comm
         [HttpGet]

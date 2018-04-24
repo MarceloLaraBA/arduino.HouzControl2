@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using HouzLink.Communication;
 using HouzLink.Controllers;
@@ -9,52 +10,50 @@ using HouzLink.Model;
 using HouzLink.Repository;
 using HouzLink.WebSocketMiddleware;
 using Microsoft.AspNetCore.Mvc.Internal;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace HouzLink.Logic
 {
-    public class DeviceLogic
+    public class DeviceLogic : IDeviceLogic
     {
+        private readonly IDeviceRepo _deviceRepo;
+
+        private readonly IClientHandler _clientHandler;
+
+        private readonly ICommDriver _commDriver;
         //todo: DI
-        private DeviceRepo _deviceRepo => Startup.ContextServiceLocator.DeviceRepo;
-        private ClientHandler _client => Startup.ContextServiceLocator.ClientHandler;
-        private CommDriver _comm => Startup.ContextServiceLocator.CommDriver;
+        //private IDeviceRepo deviceRepo => Startup.ContextServiceLocator.DeviceRepo;
+        //private IClientHandler client => Startup.ContextServiceLocator.ClientHandler;
+        //private ICommDriver comm => Startup.ContextServiceLocator.CommDriver;
 
         private ICollection<Device> Nodes { get; set; }
 
-        public DeviceLogic()
+        public DeviceLogic(IDeviceRepo deviceRepo, IClientHandler clientHandler, ICommDriver commDriver)
         {
+            _deviceRepo = deviceRepo;
+            _clientHandler = clientHandler;
+            _commDriver = commDriver;
             LogController.LogAdd("DeviceLogic.ctr");
         }
 
-        public void Setup()
-        {
-            LogController.LogAdd("DeviceLogic.Setup()");
-            UpdateNodes();
-        }
 
 
         public async void UpdateDevice(CommandResult command)
         {
             Device device = _deviceRepo.GetById(command.Device.Id);
-            if (device == null)
-            {
-                return;
-            }
+            if (device == null) return;
 
             //todo: update node status
             switch (command.Result)
             {
                 case ResultEnm.SentOk:
-                    device.ValueDate = DateTime.Now;
                     device.Status = Device.DeviceStatus.Awaiting;
                     break;
                 case ResultEnm.SentRetry:
-                    device.ValueDate = DateTime.Now;
                     device.Status = Device.DeviceStatus.Unknown;
                     break;
                 case ResultEnm.SentFail:
-                    device.ValueDate = DateTime.Now;
                     device.Status = Device.DeviceStatus.Error;
                     break;
                 case ResultEnm.Received:
@@ -75,11 +74,10 @@ namespace HouzLink.Logic
                             break;
                         default: device.Value = device.Payload; break;
                     }
-
                     break;
             }
             _deviceRepo.Update(device);
-            await _client.SendMessage(MessageType.DeviceUpdate, device);
+            await _clientHandler.SendMessage(MessageType.DeviceUpdate, device);
         }
 
         public void UpdateNodes()
@@ -98,9 +96,8 @@ namespace HouzLink.Logic
             cmd += ((int)command).ToString("X");    // command
             cmd += device.Id.ToString("X2");               // device
             cmd += payload.ToString("X4");            // value (only on set)
-            return _comm.Send(cmd);
+            return _commDriver.Send(cmd);
         }
-
 
         public bool QueryDevice(int id)
         {
@@ -112,6 +109,25 @@ namespace HouzLink.Logic
         {
             Device dev = _deviceRepo.GetById(deviceId);
             return dev != null && SendCommand(dev, command, payload);
+        }
+
+        public async Task QueryAllDevices()
+        {
+            DateTime voidDate = DateTime.Now.AddMinutes(-1);
+            IEnumerable<Device> voidDevices = _deviceRepo.GetAll().Where(x => x.IncludeInUpdate & x.ValueDate < voidDate);
+
+            foreach (Device node in voidDevices)
+            {
+                Console.WriteLine(node);
+                //SendCommand(node, Device.Command.QUERY, 0xF0F0);
+                await Task.Delay(1000);
+            }
+        }
+
+        public void Start()
+        {
+            LogController.LogAdd("DeviceLogic.Setup()");
+            UpdateNodes();
         }
     }
 }

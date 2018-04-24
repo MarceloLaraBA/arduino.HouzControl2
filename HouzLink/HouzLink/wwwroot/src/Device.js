@@ -1,4 +1,4 @@
-﻿function Device(args) {
+function Device(args) {
     this.id = args.id;
     this.name = args.name;
     this.cmd = args.cmd;
@@ -92,13 +92,14 @@ Device.prototype.setValue = function (newValue, redraw) {
     this.payload = this.value = newValue;
     switch (this.deviceType) {
         case 2: //light
+            console.log("device.setValue [light]:", this.value);
             for (let cls of ["lightOn", "lightOff"]) this.elem.classList.remove(cls);
             this.elem.classList.add(this.value === 0 ? "lightOff" : "lightOn");
                 break;
         case 10: //Humidity
         case 11: //Pressure
         case 4:  //Temp
-            console.log("device.setValue:", this.value);
+            console.log("device.setValue [env]:", this.value);
             this.elem.querySelector("span").innerText = this.value;
     }
 }

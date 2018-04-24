@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace HouzLink.WebSocketMiddleware
 {
-    public class WebSocketConnectionManager
+    public class WebSocketConnectionManager : IWebSocketConnectionManager
     {
         private ConcurrentDictionary<string, WebSocket> _sockets = new ConcurrentDictionary<string, WebSocket>();
         private ConcurrentDictionary<string, List<string>> _groups = new ConcurrentDictionary<string, List<string>>();

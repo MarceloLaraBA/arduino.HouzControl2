@@ -10,14 +10,21 @@ using Newtonsoft.Json;
 
 namespace HouzLink.Logic
 {
-    public class CommLogic
+    public class CommLogic : ICommLogic
     {
-        private CommDriver _comm => Startup.ContextServiceLocator.CommDriver;
-        private DeviceLogic _deviceLogic => Startup.ContextServiceLocator.DeviceLogic;
-        private ClientHandler _client => Startup.ContextServiceLocator.ClientHandler;
+        private readonly ICommDriver _comm;
+        private readonly IDeviceLogic _deviceLogic;
+        private readonly IClientHandler _clientHandler;
+        //private CommDriver _comm => Startup.ContextServiceLocator.CommDriver;
+        //private DeviceLogic _deviceLogic => Startup.ContextServiceLocator.DeviceLogic;
+        //private ClientHandler _client => Startup.ContextServiceLocator.ClientHandler;
 
-        public CommLogic()
+        public CommLogic(ICommDriver comm, IDeviceLogic deviceLogic, IClientHandler clientHandler )
         {
+            _comm = comm;
+            _deviceLogic = deviceLogic;
+            _clientHandler = clientHandler;
+
             LogController.LogAdd("CommLogic.ctr");
         }
 
@@ -29,7 +36,7 @@ namespace HouzLink.Logic
         }
 
         private async void CommOnStatusChanged(object sender, CommDriver.StatusEnm statusEnm) =>
-            await _client.SendMessage(MessageType.CommStatus, new CommDto(_comm));
+            await _clientHandler.SendMessage(MessageType.CommStatus, new CommDto((CommDriver) _comm));
 
 
         private async void CommOnCommandReceived(object sender, string s)
@@ -38,7 +45,7 @@ namespace HouzLink.Logic
             var result = ParseCommandResult(s);
 
             //send to debug client
-            await _client.SendMessage(MessageType.CommLog, s);
+            await _clientHandler.SendMessage(MessageType.CommLog, s);
         }
         private CommandResult ParseCommandResult(string inCommand)
         {

@@ -8,16 +8,20 @@ using Newtonsoft.Json.Serialization;
 
 namespace HouzLink.WebSocketMiddleware
 {
-    public class ClientHandler : WebSocketHandler
+    public class ClientHandler : WebSocketHandler, IClientHandler, IWebSocketHandler
     {
         private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings()
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver()
         };
 
-        public ClientHandler(WebSocketConnectionManager webSocketConnectionManager) : base(webSocketConnectionManager)
+        public ClientHandler(IWebSocketConnectionManager wscm) : base(wscm)
         {
         }
+
+        //public ClientHandler(WebSocketConnectionManager webSocketConnectionManager) : base(webSocketConnectionManager)
+        //{
+        //}
         
         //public async Task SendMessage(string socketId, string message)
         //{

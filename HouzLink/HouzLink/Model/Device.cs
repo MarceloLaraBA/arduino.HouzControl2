@@ -54,16 +54,15 @@ namespace HouzLink.Model
         public MediaEnm Media { get; set; }
         public long Payload { get; set; }
         public float Value { get; set; }
-        public DateTime ValueDate { get; set; }
         public DeviceStatus Status { get; set; }
         public DeviceTypeEnm DeviceType { get; set; }
         public String ValueStr { get; set; }
         public Int32 Node { get; set; }
+        public DateTime ValueDate { get; set; }
 
         //logic related props
         public bool IncludeInUpdate { get; set; }
         public bool IncludeInEnviroment { get; set; }
-
 
         //Device inner logic
         public bool IsQueryable() => DeviceType == DeviceTypeEnm.Node ||
@@ -83,7 +82,9 @@ namespace HouzLink.Model
             return cmd;
         }
 
-        public override string ToString() => $"[{Id:X2}:{Name}|{Value:X4}]";
+
+
+        public override string ToString() => $"[{Id:X2}:{Name}|{Payload:X4}]";
 
         public enum DeviceStatus
         {

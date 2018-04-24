@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.ViewComponents;
 
 namespace HouzLink.Repository
 {
-    public class DeviceRepo
+    public class DeviceRepo : IDeviceRepo
     {
 
 
